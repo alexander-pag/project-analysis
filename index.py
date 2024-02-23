@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_agraph import agraph, Node, Edge, Config
 import json
+from datetime import datetime
+import pandas as pd
 
 
 # Verifica si ya existe un estado de sesión, si no, lo crea
@@ -8,12 +10,35 @@ if "nodes" not in st.session_state:
     st.session_state["nodes"] = []
 if "edges" not in st.session_state:
     st.session_state["edges"] = []
+directed = False
 
-# Crea un menú desplegable con diferentes opciones
-option = st.selectbox(
-    "Elige una opción:",
-    ("", "Agregar nodo", "Agregar arista", "Leer JSON", "Exportar a JSON"),
-)
+# Crear listas de opciones para las barras de navegación
+options_file = [
+    "Select",
+    "New Graph",
+    "Open",
+    "Close",
+    "Save",
+    "Save As",
+    "Export",
+    "Import",
+    "Export to XLSX",
+]
+
+# Crear las barras de navegación como cajas de selección en la barra lateral
+option = st.sidebar.selectbox("File", options_file)
+
+# Si el usuario selecciona 'New Graph', muestra otro selectbox con las opciones 'Personalizado' y 'Aleatorio'
+if option == "New Graph":
+    options_graph = ["Select", "Personalizado", "Aleatorio"]
+    graph_option = st.sidebar.selectbox("Choose", options_graph)
+
+    if graph_option == "Personalizado":
+        directed = st.checkbox("Dirigido", value=False)
+        directed = st.checkbox("Ponderado", value=False)
+        if directed == "Dirigido":
+            directed = True
+
 
 # Muestra el formulario correspondiente cuando se selecciona una opción
 if option == "Agregar nodo":
@@ -48,8 +73,7 @@ elif option == "Agregar arista":
         new_edge = Edge(source=source, target=target, label=edge_label)
         st.session_state["edges"].append(new_edge)
 
-elif option == "Leer JSON":
-
+elif option == "Import":
     uploaded_file = st.file_uploader("Elige un archivo JSON", type="json")
     if uploaded_file is not None:
         data = json.load(uploaded_file)
@@ -74,7 +98,50 @@ elif option == "Leer JSON":
                     )
                     st.session_state["edges"].append(edge)
 
-elif option == "Exportar a JSON":
+elif option == "Export":
+    graph_data = {
+        "graph": [
+            {
+                "name": "G",
+                "data": [],
+                "generalData1": 100,
+                "generalData2": "Alg",
+                "generalData3": 300,
+            }
+        ]
+    }
+
+    for node in st.session_state["nodes"]:
+        linked_nodes = []
+        for edge in st.session_state["edges"]:
+            if edge.source == node.id:
+                linked_nodes.append({"node_id": edge.to, "weight": int(edge.label)})
+        node_data = {
+            "id": node.id,
+            "label": node.label,
+            "data": {},
+            "type": "",
+            "linkedTo": linked_nodes,
+            "radius": node.size / 50,
+            "coordinates": {"x": 0, "y": 0},
+        }
+        graph_data["graph"][0]["data"].append(node_data)
+
+    # Convierte el objeto del grafo a una cadena JSON
+    json_str = json.dumps(graph_data)
+
+    # Obtener la hora actual
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+
+    st.download_button(
+        label="Descargar JSON",
+        data=json_str,
+        file_name="graph-" + current_time + ".json",
+        mime="application/json",
+    )
+
+elif option == "Guardar Como":
     graph_data = {
         "graph": [
             {
@@ -107,16 +174,59 @@ elif option == "Exportar a JSON":
     json_str = json.dumps(graph_data)
 
     # Crea un botón de descarga para el archivo JSON
+    name = st.text_input("Nombre del archivo")
+
     st.download_button(
         label="Descargar JSON",
         data=json_str,
-        file_name="graph.json",
+        file_name=name + ".json",
         mime="application/json",
     )
 
+
+elif option == "Export to XLSX":
+    # Crea una lista para almacenar los datos de los nodos
+    nodes_data = []
+
+    # Recorre cada nodo y arista en el estado de la sesión
+    for node in st.session_state["nodes"]:
+        linked_nodes = [
+            {"node_id": edge.to, "weight": edge.label}
+            for edge in st.session_state["edges"]
+            if edge.source == node.id
+        ]
+        # Agrega los datos del nodo a la lista
+        nodes_data.append(
+            {
+                "id": node.id,
+                "label": node.label,
+                "data": {},
+                "type": "",
+                "linkedTo": ", ".join(
+                    [
+                        f"(node_id: {ln['node_id']}) (weight: {ln['weight']})"
+                        for ln in linked_nodes
+                    ]
+                ),
+                "radius": node.size / 50,
+                "coordinates": {"x": 0, "y": 0},
+            }
+        )
+
+    # Crea un DataFrame para los nodos
+    nodes_df = pd.DataFrame(nodes_data)
+
+    # Escribe el DataFrame a un archivo de Excel
+    nodes_df.to_excel("graph.xlsx", index=False)
+
+
 # Crea tu configuración
 config = Config(
-    width=750, height=950, directed=False, physics=False, hierarchical=False
+    width=750,
+    height=950,
+    directed=directed,
+    physics=False,
+    hierarchical=True,
 )
 
 # Dibuja tu gráfico
