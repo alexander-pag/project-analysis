@@ -1,0 +1,5 @@
+streamlit==1.31.1
+streamlit_agraph==0.0.45
+networkx==3.2.1
+pandas==2.2
+openpyxl==3.1.2
