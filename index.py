@@ -1,9 +1,28 @@
 import streamlit as st
 from streamlit_agraph import agraph, Node, Edge, Config
+from streamlit_option_menu import option_menu
 import json
 from datetime import datetime
 import pandas as pd
 
+# Se puede modificar los estilos de la pagina desde aquí
+page_bg_img = """
+<style>
+[data-testid="stAppViewContainer"] {
+background-color: #e5e5f7;
+opacity: 0.8;
+background-size: 20px 20px;
+}
+[data-testid='stHeader']{
+display: none !important;
+}
+[data-testid = 'stAppViewBlockContainer']{
+    max-width: 1200px;
+}
+</style>
+"""
+
+st.markdown(page_bg_img, unsafe_allow_html=True)
 
 # Verifica si ya existe un estado de sesión, si no, lo crea
 if "nodes" not in st.session_state:
@@ -14,22 +33,53 @@ directed = False
 
 # Crear listas de opciones para las barras de navegación
 options_file = [
-    "Select",
     "New Graph",
-    "Open",
-    "Close",
-    "Save",
-    "Save As",
-    "Export",
-    "Import",
-    "Export to XLSX",
+    "Open/Close",
+    "Import/Export"
 ]
+
 
 # Crear las barras de navegación como cajas de selección en la barra lateral
 option = st.sidebar.selectbox("File", options_file)
 
+if (option == "Open/Close"):
+    selected = option_menu(
+        menu_title=None,
+        options= ["Open", "Close"],
+        default_index=0,
+        icons=["list-task", 'gear'],
+        orientation = "horizontal",
+        styles= {
+        
+        }   
+    )
+elif (option == "Import/Export"):
+    selected = option_menu(
+        menu_title=None,
+        options= ["Export", "Import", "Export to XLSX"],
+        default_index=0,
+        icons=["list-task", 'gear'],
+        orientation = "horizontal",
+        styles= {
+        
+        }   
+    )
+elif (option == "Save"):
+    selected = option_menu(
+        menu_title=None,
+        options= ["Save", "Save As",],
+        default_index=0,
+        icons=["list-task", 'gear'],
+        orientation = "horizontal",
+        styles= {
+        
+        }   
+    )
+else:
+    selected = "New Graph"
+
 # Si el usuario selecciona 'New Graph', muestra otro selectbox con las opciones 'Personalizado' y 'Aleatorio'
-if option == "New Graph":
+if selected == "New Graph":
     options_graph = ["Select", "Personalizado", "Aleatorio"]
     graph_option = st.sidebar.selectbox("Choose", options_graph)
 
@@ -41,7 +91,7 @@ if option == "New Graph":
 
 
 # Muestra el formulario correspondiente cuando se selecciona una opción
-if option == "Agregar nodo":
+if selected == "Agregar nodo":
     node_id = st.text_input("ID del Nodo")
     node_label = st.text_input("Etiqueta del Nodo")
     node_image = st.text_input("URL de la Imagen del Nodo")
@@ -60,7 +110,7 @@ if option == "Agregar nodo":
 
         st.session_state["nodes"].append(new_node)
 
-elif option == "Agregar arista":
+elif selected == "Agregar arista":
     source = st.selectbox(
         "Nodo de origen", [node.id for node in st.session_state["nodes"]]
     )
@@ -73,8 +123,8 @@ elif option == "Agregar arista":
         new_edge = Edge(source=source, target=target, label=edge_label)
         st.session_state["edges"].append(new_edge)
 
-elif option == "Import":
-    uploaded_file = st.file_uploader("Elige un archivo JSON", type="json")
+elif selected == "Import":
+    uploaded_file = st.sidebar.file_uploader("Elige un archivo JSON", type="json")
     if uploaded_file is not None:
         data = json.load(uploaded_file)
 
@@ -98,7 +148,7 @@ elif option == "Import":
                     )
                     st.session_state["edges"].append(edge)
 
-elif option == "Export":
+elif selected == "Export":
     graph_data = {
         "graph": [
             {
@@ -141,7 +191,7 @@ elif option == "Export":
         mime="application/json",
     )
 
-elif option == "Guardar Como":
+elif selected == "Guardar Como":
     graph_data = {
         "graph": [
             {
@@ -184,7 +234,7 @@ elif option == "Guardar Como":
     )
 
 
-elif option == "Export to XLSX":
+elif selected == "Export to XLSX":
     # Crea una lista para almacenar los datos de los nodos
     nodes_data = []
 
@@ -222,7 +272,7 @@ elif option == "Export to XLSX":
 
 # Crea tu configuración
 config = Config(
-    width=750,
+    width="100%",
     height=950,
     directed=directed,
     physics=False,
