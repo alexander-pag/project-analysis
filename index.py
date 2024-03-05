@@ -4,6 +4,8 @@ from streamlit_option_menu import option_menu
 import json
 from datetime import datetime
 import pandas as pd
+import pyautogui as pg
+import io
 
 # Se puede modificar los estilos de la pagina desde aquí
 page_bg_img = """
@@ -32,48 +34,71 @@ if "edges" not in st.session_state:
 directed = False
 
 # Crear listas de opciones para las barras de navegación
-options_file = [
-    "New Graph",
-    "Open/Close",
-    "Import/Export"
-]
+options_file = ["New Graph", "Open/Close", "Import/Export"]
 
 
 # Crear las barras de navegación como cajas de selección en la barra lateral
 option = st.sidebar.selectbox("File", options_file)
 
-if (option == "Open/Close"):
+if option == "Open/Close":
     selected = option_menu(
         menu_title=None,
-        options= ["Open", "Close"],
+        options=["Open", "Close"],
         default_index=0,
-        icons=["list-task", 'gear'],
-        orientation = "horizontal",
-        styles= {
-        
-        }   
+        icons=["list-task", "gear"],
+        orientation="horizontal",
+        styles={},
     )
-elif (option == "Import/Export"):
+    if selected == "Open":
+        uploaded_file = st.sidebar.file_uploader("Elige un archivo JSON", type="json")
+        if uploaded_file is not None:
+            data = json.load(uploaded_file)
+
+            for graph in data["graph"]:
+                for node_data in graph["data"]:
+                    node = Node(
+                        id=node_data["id"],
+                        label=node_data["label"],
+                        size=node_data["radius"]
+                        * 50,  # Ajusta el tamaño según tus necesidades
+                        shape="circularImage",
+                        image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png",  # Ajusta la imagen según tus necesidades
+                    )
+                    st.session_state["nodes"].append(node)
+
+                    for linked_node in node_data["linkedTo"]:
+                        edge = Edge(
+                            source=node.id,
+                            target=linked_node["node_id"],
+                            label=str(linked_node["weight"]),
+                        )
+                        st.session_state["edges"].append(edge)
+    else:
+        st.session_state["nodes"] = []
+        st.session_state["edges"] = []
+
+elif option == "Import/Export":
     selected = option_menu(
         menu_title=None,
-        options= ["Export", "Import", "Export to XLSX"],
+        options=["Export", "Import", "Export to XLSX", "Export to image"],
         default_index=0,
-        icons=["list-task", 'gear'],
-        orientation = "horizontal",
-        styles= {
-        
-        }   
+        icons=["list-task", "gear"],
+        orientation="horizontal",
+        styles={},
     )
-elif (option == "Save"):
+
+
+elif option == "Save":
     selected = option_menu(
         menu_title=None,
-        options= ["Save", "Save As",],
+        options=[
+            "Save",
+            "Save As",
+        ],
         default_index=0,
-        icons=["list-task", 'gear'],
-        orientation = "horizontal",
-        styles= {
-        
-        }   
+        icons=["list-task", "gear"],
+        orientation="horizontal",
+        styles={},
     )
 else:
     selected = "New Graph"
@@ -88,6 +113,46 @@ if selected == "New Graph":
         directed = st.checkbox("Ponderado", value=False)
         if directed == "Dirigido":
             directed = True
+        else:
+            directed = False
+
+        node_id = st.text_input("ID del Nodo")
+        node_label = st.text_input("Etiqueta del Nodo")
+        node_image = st.text_input("URL de la Imagen del Nodo")
+
+        if node_image == "":
+            node_image = "https://github.com/github.png?size=460"
+
+        if st.button("Agregar Nodo"):
+            new_node = Node(
+                id=node_id,
+                label=node_label,
+                size=25,
+                shape="circularImage",
+                image=node_image,
+            )
+
+            st.session_state["nodes"].append(new_node)
+
+        source = st.selectbox(
+            "Nodo de origen", [node.id for node in st.session_state["nodes"]]
+        )
+        target = st.selectbox(
+            "Nodo de destino", [node.id for node in st.session_state["nodes"]]
+        )
+        edge_label = st.text_input("Etiqueta de la arista")
+
+        if st.button("Agregar Arista"):
+            new_edge = Edge(source=source, target=target, label=edge_label)
+            st.session_state["edges"].append(new_edge)
+            # Si no es dirigido, se agrega la arista inversa
+            """
+            if not directed:
+                new_edge = Edge(source=target, target=source, label=edge_label)
+                st.session_state["edges"].append(new_edge)
+            """
+    if graph_option == "Aleatorio":
+        pass
 
 
 # Muestra el formulario correspondiente cuando se selecciona una opción
@@ -148,6 +213,16 @@ elif selected == "Import":
                     )
                     st.session_state["edges"].append(edge)
 
+    # Determinar si el grafo es bipartito o no
+    is_bipartite = True
+    for edge in st.session_state["edges"]:
+        if edge.source == edge.to:
+            is_bipartite = False
+            break
+
+    if is_bipartite:
+        st.write("El grafo es bipartito")
+
 elif selected == "Export":
     graph_data = {
         "graph": [
@@ -190,6 +265,30 @@ elif selected == "Export":
         file_name="graph-" + current_time + ".json",
         mime="application/json",
     )
+
+elif selected == "Export to image":
+    # Definir las coordenadas del área de la captura de pantalla
+    x, y, width, height = 580, 320, 1150, 720
+
+    # Tomar la captura de pantalla
+    screenshot = pg.screenshot(region=(x, y, width, height))
+
+    # Crear un objeto BytesIO para guardar la imagen
+    buf = io.BytesIO()
+
+    # Guardar la captura de pantalla en el objeto BytesIO
+    screenshot.save(buf, format="png")
+
+    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Crear un botón de descarga para la imagen
+    st.download_button(
+        label="Descargar captura de pantalla",
+        data=buf.getvalue(),
+        file_name="graph-" + date + ".png",
+        mime="image/png",
+    )
+
 
 elif selected == "Guardar Como":
     graph_data = {

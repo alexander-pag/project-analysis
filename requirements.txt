@@ -3,3 +3,4 @@ streamlit_agraph==0.0.45
 networkx==3.2.1
 pandas==2.2
 openpyxl==3.1.2
+streamlit_option_menu==0.3.12
