@@ -13,3 +13,17 @@ class Utils:
 
     def getDateTime(self):
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def generateColor(self):
+        return "#{:06x}".format(random.randint(0, 0xFFFFFF))
+
+    def generateShape(self):
+        shapes = [
+            "dot",
+            "star",
+            "triangle",
+            "triangleDown",
+            "hexagon",
+            "square",
+        ]
+        return random.choice(shapes)
