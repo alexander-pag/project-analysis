@@ -34,22 +34,30 @@ if "edges" not in st.session_state:
 directed = False
 
 # Crear listas de opciones para las barras de navegación
-options_file = ["New Graph", "Open/Close", "Import/Export"]
+options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda"]
 
+# Crear las barras de navegación como cajas de selección en la barra latera
+with st.sidebar:
+    option = option_menu(menu_title=None,
+                options = options_file,
+                default_index=0,
+                icons=["list-task", "gear"],
+                orientation="vertical",
+                styles={},) 
 
-# Crear las barras de navegación como cajas de selección en la barra lateral
-option = st.sidebar.selectbox("File", options_file)
+#option = st.sidebar.selectbox("File", options_file)
 
-if option == "Open/Close":
+if option == "Archivo":
+    opcionesArchivo = ["Nuevo grafo", "Abrir", "Cerrar", "Guardar", "Import/Export", "Salir"]
     selected = option_menu(
         menu_title=None,
-        options=["Open", "Close"],
+        options= opcionesArchivo,
         default_index=0,
         icons=["list-task", "gear"],
         orientation="horizontal",
         styles={},
     )
-    if selected == "Open":
+    if selected == "Abrir":
         uploaded_file = st.sidebar.file_uploader("Elige un archivo JSON", type="json")
         if uploaded_file is not None:
             data = json.load(uploaded_file)
@@ -73,23 +81,61 @@ if option == "Open/Close":
                             label=str(linked_node["weight"]),
                         )
                         st.session_state["edges"].append(edge)
-    else:
+    elif selected == "Cerrar":
         st.session_state["nodes"] = []
         st.session_state["edges"] = []
 
-elif option == "Import/Export":
-    selected = option_menu(
-        menu_title=None,
-        options=["Export", "Import", "Export to XLSX", "Export to image"],
-        default_index=0,
-        icons=["list-task", "gear"],
-        orientation="horizontal",
-        styles={},
-    )
+    elif selected == "Nuevo grafo":
+        options_graph = ["Select", "Personalizado", "Aleatorio"]
+        graph_option = st.sidebar.selectbox("Choose", options_graph)
 
+        if graph_option == "Personalizado":
+            directed = st.checkbox("Dirigido", value=False)
+            directed = st.checkbox("Ponderado", value=False)
+            if directed == "Dirigido":
+                directed = True
+            else:
+                directed = False
 
-elif option == "Save":
-    selected = option_menu(
+            node_id = st.text_input("ID del Nodo")
+            node_label = st.text_input("Etiqueta del Nodo")
+            node_image = st.text_input("URL de la Imagen del Nodo")
+
+            if node_image == "":
+                node_image = "https://github.com/github.png?size=460"
+
+            if st.button("Agregar Nodo"):
+                new_node = Node(
+                    id=node_id,
+                    label=node_label,
+                    size=25,
+                    shape="circularImage",
+                    image=node_image,
+                )
+
+                st.session_state["nodes"].append(new_node)
+
+            source = st.selectbox(
+                "Nodo de origen", [node.id for node in st.session_state["nodes"]]
+            )
+            target = st.selectbox(
+                "Nodo de destino", [node.id for node in st.session_state["nodes"]]
+            )
+            edge_label = st.text_input("Etiqueta de la arista")
+
+            if st.button("Agregar Arista"):
+                new_edge = Edge(source=source, target=target, label=edge_label)
+                st.session_state["edges"].append(new_edge)
+                # Si no es dirigido, se agrega la arista inversa
+                """
+                if not directed:
+                    new_edge = Edge(source=target, target=source, label=edge_label)
+                    st.session_state["edges"].append(new_edge)
+                """
+        if graph_option == "Aleatorio":
+            pass
+    elif selected == "Guardar":
+        selected = option_menu(
         menu_title=None,
         options=[
             "Save",
@@ -100,60 +146,16 @@ elif option == "Save":
         orientation="horizontal",
         styles={},
     )
-else:
-    selected = "New Graph"
 
-# Si el usuario selecciona 'New Graph', muestra otro selectbox con las opciones 'Personalizado' y 'Aleatorio'
-if selected == "New Graph":
-    options_graph = ["Select", "Personalizado", "Aleatorio"]
-    graph_option = st.sidebar.selectbox("Choose", options_graph)
-
-    if graph_option == "Personalizado":
-        directed = st.checkbox("Dirigido", value=False)
-        directed = st.checkbox("Ponderado", value=False)
-        if directed == "Dirigido":
-            directed = True
-        else:
-            directed = False
-
-        node_id = st.text_input("ID del Nodo")
-        node_label = st.text_input("Etiqueta del Nodo")
-        node_image = st.text_input("URL de la Imagen del Nodo")
-
-        if node_image == "":
-            node_image = "https://github.com/github.png?size=460"
-
-        if st.button("Agregar Nodo"):
-            new_node = Node(
-                id=node_id,
-                label=node_label,
-                size=25,
-                shape="circularImage",
-                image=node_image,
-            )
-
-            st.session_state["nodes"].append(new_node)
-
-        source = st.selectbox(
-            "Nodo de origen", [node.id for node in st.session_state["nodes"]]
-        )
-        target = st.selectbox(
-            "Nodo de destino", [node.id for node in st.session_state["nodes"]]
-        )
-        edge_label = st.text_input("Etiqueta de la arista")
-
-        if st.button("Agregar Arista"):
-            new_edge = Edge(source=source, target=target, label=edge_label)
-            st.session_state["edges"].append(new_edge)
-            # Si no es dirigido, se agrega la arista inversa
-            """
-            if not directed:
-                new_edge = Edge(source=target, target=source, label=edge_label)
-                st.session_state["edges"].append(new_edge)
-            """
-    if graph_option == "Aleatorio":
-        pass
-
+    elif selected == "Import/Export":
+        selected = option_menu(
+        menu_title=None,
+        options=["Export", "Import", "Export to XLSX", "Export to image"],
+        default_index=0,
+        icons=["list-task", "gear"],
+        orientation="horizontal",
+        styles={},
+    )
 
 # Muestra el formulario correspondiente cuando se selecciona una opción
 if selected == "Agregar nodo":
@@ -259,7 +261,7 @@ elif selected == "Export":
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
 
-    st.download_button(
+    st.sidebar.download_button(
         label="Descargar JSON",
         data=json_str,
         file_name="graph-" + current_time + ".json",
@@ -282,7 +284,7 @@ elif selected == "Export to image":
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Crear un botón de descarga para la imagen
-    st.download_button(
+    st.sidebar.download_button(
         label="Descargar captura de pantalla",
         data=buf.getvalue(),
         file_name="graph-" + date + ".png",
@@ -325,7 +327,7 @@ elif selected == "Guardar Como":
     # Crea un botón de descarga para el archivo JSON
     name = st.text_input("Nombre del archivo")
 
-    st.download_button(
+    st.sidebar.download_button(
         label="Descargar JSON",
         data=json_str,
         file_name=name + ".json",
