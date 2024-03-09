@@ -1,4 +1,5 @@
 import random
+import datetime
 
 
 class Utils:
@@ -9,3 +10,6 @@ class Utils:
     def createRandomId(self):
         characters = "1234567890"
         return "".join(random.choice(characters) for i in range(4))
+
+    def getDateTime(self):
+        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
