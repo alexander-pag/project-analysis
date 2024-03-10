@@ -1,12 +1,18 @@
 [data-testid="stAppViewContainer"] {
-    background-color: azure;
-    opacity: 0.8;
-    background-size: 20px 20px;
+  background-color: azure;
+  opacity: 0.8;
+  background-size: 20px 20px;
 }
 
-[data-testid='stHeader']{
+[data-testid="stHeader"] {
 }
-    
-[data-testid = 'stAppViewBlockContainer']{
-        max-width: 1200px;
+
+[data-testid="stAppViewBlockContainer"] {
+  max-width: 1200px;
+}
+
+#dataframes {
+  font-size: 40px;
+  font-weight: bold;
+  color: #435585;
 }
