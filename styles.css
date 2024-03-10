@@ -1,0 +1,12 @@
+[data-testid="stAppViewContainer"] {
+    background-color: azure;
+    opacity: 0.8;
+    background-size: 20px 20px;
+}
+
+[data-testid='stHeader']{
+}
+    
+[data-testid = 'stAppViewBlockContainer']{
+        max-width: 1200px;
+}

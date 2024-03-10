@@ -10,50 +10,29 @@ from Utils import Utils
 import networkx as nx
 import copy
 
-
-# Se puede modificar los estilos de la pagina desde aquí
-page_bg_img = """
-<style>
-[data-testid="stAppViewContainer"] {
-opacity: 0.8;
-background-size: 20px 20px;
-}
-[data-testid='stHeader']{
-}
-[data-testid = 'stAppViewBlockContainer']{
-    max-width: 1200px;
-}
-</style>
-"""
-
-st.markdown(page_bg_img, unsafe_allow_html=True)
-
 U = Utils()
 
-# Verifica si ya existe un estado de sesión, si no, lo crea
-if "graph" not in st.session_state:
-    st.session_state["graph"] = False
-if "nodes" not in st.session_state:
-    st.session_state["nodes"] = []
-if "copy_nodes" not in st.session_state:
-    st.session_state["copy_nodes"] = []
-if "edges" not in st.session_state:
-    st.session_state["edges"] = []
-if "copy_edges" not in st.session_state:
-    st.session_state["copy_edges"] = []
-if "directed" not in st.session_state:
-    st.session_state["directed"] = False
-if "weighted" not in st.session_state:
-    st.session_state["weighted"] = False
-if "conex" not in st.session_state:
-    st.session_state["conex"] = False
-if "connected" not in st.session_state:
-    st.session_state["connected"] = False
-if "name_graph" not in st.session_state:
-    st.session_state["name_graph"] = ""
-if "last_action" not in st.session_state:
-    st.session_state["last_action"] = "a"
+css = U.load_css()
+st.markdown(css, unsafe_allow_html=True)
 
+# Verifica si ya existe un estado de sesión, si no, lo crea
+default_session_state = {
+    "graph": False,
+    "nodes": [],
+    "copy_nodes": [],
+    "edges": [],
+    "copy_edges": [],
+    "directed": False,
+    "weighted": False,
+    "conex": False,
+    "connected": False,
+    "name_graph": "",
+    "last_action": "a"
+}
+
+for key, value in default_session_state.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # Crear listas de opciones para las barras de navegación
 options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda"]
@@ -78,64 +57,8 @@ if option == "Archivo":
     )
 
     if selected == "Guardar Como":
-        graph_data = {
-            "graph": [
-                {
-                    "name": (
-                        st.session_state["name_graph"]
-                        if st.session_state["name_graph"]
-                        else "Grafo"
-                    ),
-                    "data": [],
-                    "generalData1": 100,
-                    "generalData2": "Alg",
-                    "generalData3": 300,
-                    "isDirected": st.session_state["directed"],
-                    "isWeighted": st.session_state["weighted"],
-                    "isConnected": st.session_state["connected"],
-                    "isConex": st.session_state["conex"],
-                }
-            ]
-        }
-
-        for node in st.session_state["nodes"]:
-            linked_nodes = []
-            # Añadir los nodos que tengan una arista con el nodo actual
-            for edge in st.session_state["edges"]:
-                if int(edge.source) == node.id:
-                    linked_nodes.append(
-                        {
-                            "node_id": edge.to,
-                            "weight": int(edge.label) if edge.label else 0,
-                            "color": edge.color,
-                        }
-                    )
-
-            node_data = {
-                "id": node.id,
-                "label": node.label,
-                "color": node.color,
-                "shape": node.shape,
-                "data": {},
-                "type": "",
-                "linkedTo": linked_nodes,
-                "radius": node.size,
-                "coordinates": {"x": 0, "y": 0},
-            }
-            graph_data["graph"][0]["data"].append(node_data)
-
-        # Convierte el objeto del grafo a una cadena JSON
-        json_str = json.dumps(graph_data)
-
-        # Crea un botón de descarga para el archivo JSON
-        name = st.sidebar.text_input("Nombre del archivo")
-
-        st.sidebar.download_button(
-            label="Descargar JSON",
-            data=json_str,
-            file_name=name + ".json",
-            mime="application/json",
-        )
+        json_str = U.generate_graph_json(st.session_state["nodes"], st.session_state["edges"])
+        U.create_download_button(json_str)
 
     elif selected == "Open/Close":
         selected1 = option_menu(
@@ -146,6 +69,7 @@ if option == "Archivo":
             orientation="horizontal",
             styles={},
         )
+
         if selected1 == "Open":
             uploaded_file = st.sidebar.file_uploader(
                 "Elige un archivo JSON", type="json"
@@ -153,30 +77,8 @@ if option == "Archivo":
             if uploaded_file is not None:
                 data = json.load(uploaded_file)
 
-                st.write(data["graph"][0]["isDirected"])
+                U.open_json_file(data)
 
-                for graph in data["graph"]:
-                    for node_data in graph["data"]:
-                        node = Node(
-                            id=node_data["id"],
-                            label=node_data["label"],
-                            color=node_data["color"],
-                            shape=node_data["shape"],
-                        )
-                        st.session_state["nodes"].append(node)
-
-                        for linked_node in node_data["linkedTo"]:
-                            edge = Edge(
-                                source=node.id,
-                                target=linked_node["node_id"],
-                                color=linked_node["color"],
-                                label=(
-                                    str(linked_node["weight"])
-                                    if linked_node["weight"]
-                                    else ""
-                                ),
-                            )
-                            st.session_state["edges"].append(edge)
         elif selected1 == "Close":
             st.session_state["nodes"] = []
             st.session_state["edges"] = []
@@ -316,44 +218,7 @@ if option == "Archivo":
 
             # Si existe un grafo, mostrar los widgets para el nodo
             if st.session_state["graph"]:
-                # Crear un expander para el nodo en la barra lateral
-                with st.sidebar.expander("Nodo"):
-                    # Campo de texto para introducir el ID del nodo
-                    node_id = st.text_input("ID del nodo")
-
-                    # Campo de texto para introducir el nombre del nodo
-                    node_name = st.text_input("Nombre del nodo")
-
-                    # Selector de color para elegir el color del nodo
-                    node_color = st.color_picker("Color del nodo")
-
-                    # Selector de forma del nodo, como diccionario
-                    node_shape = st.selectbox(
-                        "Forma del nodo",
-                        [
-                            "diamond",
-                            "dot",
-                            "square",
-                            "star",
-                            "triangle",
-                            "triangleDown",
-                        ],
-                    )
-
-                    # Botón para agregar el nodo al grafo
-                    add_node_button = st.button("Agregar nodo")
-
-                    if add_node_button:
-                        new_node = Node(
-                            id=node_id,
-                            label=node_name,
-                            size=25,
-                            shape=node_shape,
-                            # image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png",
-                            color=node_color,
-                        )
-
-                        st.session_state["nodes"].append(new_node)
+                U.add_node_to_graph("Agregar Nodo")
 
             if len(st.session_state["nodes"]) > 1:
                 # Crear un expander para la arista en la barra lateral
@@ -524,72 +389,10 @@ elif option == "Editar":
             styles={},
         )
         if selected == "Agregar Nodo":
-            node_id = st.sidebar.text_input("ID del nodo")
-            node_label = st.sidebar.text_input("Nombre del nodo")
-            node_color = st.sidebar.color_picker("Color del nodo")
-            node_shape = st.sidebar.selectbox(
-                "Forma del nodo",
-                [
-                    "diamond",
-                    "dot",
-                    "square",
-                    "star",
-                    "triangle",
-                    "triangleDown",
-                ],
-            )
-
-            if st.sidebar.button("Agregar"):
-                # Hacer una copia profunda del estado actual antes de agregar un nuevo nodo
-                st.session_state["copy_nodes"] = copy.deepcopy(
-                    st.session_state["nodes"]
-                )
-
-                new_node = Node(
-                    id=node_id, label=node_label, color=node_color, shape=node_shape
-                )
-
-                st.session_state["nodes"].append(new_node)
-                st.session_state["last_action"] = "New Node"
+            U.add_node_to_graph(selected)
 
         elif selected == "Editar Nodo":
-            node_id = st.sidebar.selectbox(
-                "Seleccione nodo: ",
-                [node.id for node in st.session_state["nodes"]],
-            )
-
-            for node in st.session_state["nodes"]:
-                if node_id == node.id:
-                    actual_node = node
-
-            node_label = st.sidebar.text_input("Nombre del nodo: ", actual_node.label)
-            node_color = st.sidebar.color_picker("Color del nodo", actual_node.color)
-            node_shape = st.sidebar.selectbox(
-                "Forma del nodo",
-                [
-                    "diamond",
-                    "dot",
-                    "square",
-                    "star",
-                    "triangle",
-                    "triangleDown",
-                ],
-                index=0,
-            )
-
-            if st.sidebar.button("Cambiar Nodo"):
-
-                st.session_state["copy_nodes"] = copy.deepcopy(
-                    st.session_state["nodes"]
-                )
-
-                index = st.session_state["nodes"].index(actual_node)
-
-                st.session_state["nodes"][index].label = node_label
-                st.session_state["nodes"][index].color = node_color
-                st.session_state["nodes"][index].shape = node_shape
-
-                st.session_state["last_action"] = "Edit Node"
+            U.add_node_to_graph(selected)
 
         elif selected == "Eliminar Nodo":
             node_id = st.sidebar.selectbox(
@@ -597,9 +400,7 @@ elif option == "Editar":
                 [node.id for node in st.session_state["nodes"]],
             )
 
-            for node in st.session_state["nodes"]:
-                if node_id == node.id:
-                    actual_node = node
+            actual_node = next((node for node in st.session_state["nodes"] if node.id == node_id), None)
 
             if st.sidebar.button("Eliminar"):
 
@@ -690,51 +491,21 @@ elif option == "Editar":
                 [(edge.source, edge.to) for edge in st.session_state["edges"]],
             )
 
-            for edge in st.session_state["edges"]:
-                if edge.source == actual_source[0] and edge.to == actual_source[1]:
-                    actual_edge = edge
-
-            st.sidebar.write(actual_source)
+            actual_edge = next((edge for edge in st.session_state["edges"] if edge.source == actual_source[0] and edge.to == actual_source[1]), None)
 
             if st.sidebar.button("Eliminar"):
 
                 st.session_state["edges"].remove(actual_edge)
-
                 st.session_state["last_action"] = "Delete Edge"
 
     elif selected == "Deshacer":
-        # Deshacer el último cambio en los nodos o las aristas
-        st.sidebar.write(st.session_state["last_action"])
-        if (
-            len(st.session_state["nodes"]) > len(st.session_state["copy_nodes"])
-        ) and st.session_state["last_action"] == "New Node":
-            st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
-        elif (
-            len(st.session_state["edges"]) > len(st.session_state["copy_edges"])
-            and st.session_state["last_action"] == "New Edge"
-        ):
-            st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
-        elif (
-            len(st.session_state["nodes"]) < len(st.session_state["copy_nodes"])
-            and st.session_state["last_action"] == "Delete Node"
-        ):
-            st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
-        elif (
-            len(st.session_state["edges"]) < len(st.session_state["copy_edges"])
-            and st.session_state["last_action"] == "Delete Edge"
-        ):
-            st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
-        elif (
-            len(st.session_state["nodes"]) == len(st.session_state["copy_nodes"])
-            and st.session_state["last_action"] == "Edit Node"
-        ):
-            st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
-        elif (
-            len(st.session_state["edges"]) == len(st.session_state["copy_edges"])
-            and st.session_state["last_action"] == "Edit Edge"
-        ):
-            st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
-
+    # Deshacer el último cambio en los nodos o las aristas
+        last_action = st.session_state.get("last_action")
+        if last_action:
+            if last_action in ["New Node", "Delete Node", "Edit Node"]:
+                st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
+            elif last_action in ["New Edge", "Delete Edge", "Edit Edge"]:
+                st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
 
 elif option == "Save":
     selected = option_menu(
