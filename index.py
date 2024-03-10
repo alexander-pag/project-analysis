@@ -472,7 +472,7 @@ elif option == "Editar":
         menu_title=None,
         options=opcionesEditar,
         default_index=0,
-        icons=["list-task", "gear"],
+        icons=["list-task", "gear", "x-square"],
         orientation="vertical",
         styles={},
     )
@@ -491,16 +491,16 @@ elif option == "Editar":
             node_label = st.sidebar.text_input("Nombre del nodo")
             node_color = st.sidebar.color_picker("Color del nodo")
             node_shape = st.sidebar.selectbox(
-                        "Forma del nodo",
-                        [
-                            "diamond",
-                            "dot",
-                            "square",
-                            "star",
-                            "triangle",
-                            "triangleDown",
-                        ],
-                    )
+                "Forma del nodo",
+                [
+                    "diamond",
+                    "dot",
+                    "square",
+                    "star",
+                    "triangle",
+                    "triangleDown",
+                ],
+            )
 
             if st.sidebar.button("Agregar"):
                 # Hacer una copia profunda del estado actual antes de agregar un nuevo nodo
@@ -509,75 +509,70 @@ elif option == "Editar":
                 )
 
                 new_node = Node(
-                    id= node_id,
-                    label= node_label,
-                    color= node_color,
-                    shape = node_shape
+                    id=node_id, label=node_label, color=node_color, shape=node_shape
                 )
 
                 st.session_state["nodes"].append(new_node)
                 st.session_state["last_action"] = "New Node"
-        
+
         elif selected == "Editar Nodo":
             node_id = st.sidebar.selectbox(
-                "Nodo de inicio de la arista",
+                "Seleccione nodo: ",
                 [node.id for node in st.session_state["nodes"]],
             )
 
             for node in st.session_state["nodes"]:
                 if node_id == node.id:
                     actual_node = node
-            
-            shape_list = [
-                            "diamond",
-                            "dot",
-                            "square",
-                            "star",
-                            "triangle",
-                            "triangleDown",
-                        ]
-            for shape in shape_list:
-                if shape == actual_node.shape:
-                    index_shape = shape_list.index(shape)
 
-            node_label = st.sidebar.text_input("Etiqueta del nodo: ", actual_node.label)
+            node_label = st.sidebar.text_input("Nombre del nodo: ", actual_node.label)
             node_color = st.sidebar.color_picker("Color del nodo", actual_node.color)
             node_shape = st.sidebar.selectbox(
-                        "Forma del nodo",
-                        [
-                            "diamond",
-                            "dot",
-                            "square",
-                            "star",
-                            "triangle",
-                            "triangleDown",
-                        ], index = index_shape
-                    )
+                "Forma del nodo",
+                [
+                    "diamond",
+                    "dot",
+                    "square",
+                    "star",
+                    "triangle",
+                    "triangleDown",
+                ],
+                index=0,
+            )
+
             if st.sidebar.button("Cambiar Nodo"):
 
-                index = st.session_state["nodes"].index(node)
+                st.session_state["copy_nodes"] = copy.deepcopy(
+                    st.session_state["nodes"]
+                )
+
+                index = st.session_state["nodes"].index(actual_node)
 
                 st.session_state["nodes"][index].label = node_label
                 st.session_state["nodes"][index].color = node_color
                 st.session_state["nodes"][index].shape = node_shape
 
                 st.session_state["last_action"] = "Edit Node"
+
         elif selected == "Eliminar Nodo":
             node_id = st.sidebar.selectbox(
-                "Nodo de inicio de la arista",
+                "Seleccione nodo: ",
                 [node.id for node in st.session_state["nodes"]],
             )
 
             for node in st.session_state["nodes"]:
                 if node_id == node.id:
                     actual_node = node
-            
+
             if st.sidebar.button("Eliminar"):
 
-                st.session_state["nodes"].remove(node)
+                st.session_state["copy_nodes"] = copy.deepcopy(
+                    st.session_state["nodes"]
+                )
+
+                st.session_state["nodes"].remove(actual_node)
 
                 st.session_state["last_action"] = "Delete Node"
-
 
     elif selected == "Arista":
         selected = option_menu(
@@ -610,35 +605,97 @@ elif option == "Editar":
             edge_color = st.sidebar.color_picker("Color de la arista")
 
             if st.sidebar.button("Agregar"):
-                new_edge = Edge(source=source, target=target, label=edge_label, color=edge_color)
+                new_edge = Edge(
+                    source=source, target=target, label=edge_label, color=edge_color
+                )
                 st.session_state["edges"].append(new_edge)
                 st.session_state["last_action"] = "New Edge"
-        
-        elif selected == "Editar Arista":
-            pass
 
-        elif selected == "Eliminar Arista":
-            actual_source = st.sidebar.selectbox("Seleccione arista: ", 
-                                               [(edge.source, edge.to) for edge in st.session_state["edges"]])
-            
+        elif selected == "Editar Arista":
+            actual_source = st.sidebar.selectbox(
+                "Seleccione arista: ",
+                [(edge.source, edge.to) for edge in st.session_state["edges"]],
+            )
+
             for edge in st.session_state["edges"]:
                 if edge.source == actual_source[0] and edge.to == actual_source[1]:
                     actual_edge = edge
-            
+
+            st.sidebar.write(actual_source)
+
+            edge_label = ""
+            if st.session_state["weighted"]:
+                # Campo de texto para introducir la etiqueta de la arista
+                edge_label = st.sidebar.text_input(
+                    "Etiqueta de la arista", actual_edge.label
+                )
+
+            edge_color = st.sidebar.color_picker(
+                "Color de la arista", actual_edge.color
+            )
+
+            if st.sidebar.button("Cambiar Arista"):
+
+                st.session_state["copy_edges"] = copy.deepcopy(
+                    st.session_state["edges"]
+                )
+
+                index = st.session_state["edges"].index(actual_edge)
+
+                st.session_state["edges"][index].label = edge_label
+                st.session_state["edges"][index].color = edge_color
+
+                st.session_state["last_action"] = "Edit Edge"
+
+        elif selected == "Eliminar Arista":
+            actual_source = st.sidebar.selectbox(
+                "Seleccione arista: ",
+                [(edge.source, edge.to) for edge in st.session_state["edges"]],
+            )
+
+            for edge in st.session_state["edges"]:
+                if edge.source == actual_source[0] and edge.to == actual_source[1]:
+                    actual_edge = edge
+
             st.sidebar.write(actual_source)
 
             if st.sidebar.button("Eliminar"):
 
                 st.session_state["edges"].remove(actual_edge)
-                
+
                 st.session_state["last_action"] = "Delete Edge"
 
     elif selected == "Deshacer":
         # Deshacer el último cambio en los nodos o las aristas
         st.sidebar.write(st.session_state["last_action"])
-        if (len(st.session_state["nodes"]) > len(st.session_state["copy_nodes"])) and st.session_state["last_action"] == "New Node":
+        if (
+            len(st.session_state["nodes"]) > len(st.session_state["copy_nodes"])
+        ) and st.session_state["last_action"] == "New Node":
             st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
-        elif len(st.session_state["edges"]) > len(st.session_state["copy_edges"]) and st.session_state["last_action"] == "New Edge":
+        elif (
+            len(st.session_state["edges"]) > len(st.session_state["copy_edges"])
+            and st.session_state["last_action"] == "New Edge"
+        ):
+            st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
+        elif (
+            len(st.session_state["nodes"]) < len(st.session_state["copy_nodes"])
+            and st.session_state["last_action"] == "Delete Node"
+        ):
+            st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
+        elif (
+            len(st.session_state["edges"]) < len(st.session_state["copy_edges"])
+            and st.session_state["last_action"] == "Delete Edge"
+        ):
+            st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
+        elif (
+            len(st.session_state["nodes"]) == len(st.session_state["copy_nodes"])
+            and st.session_state["last_action"] == "Edit Node"
+        ):
+            st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
+        elif (
+            len(st.session_state["edges"]) == len(st.session_state["copy_edges"])
+            and st.session_state["last_action"] == "Edit Edge"
+        ):
             st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
 
 
