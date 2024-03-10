@@ -15,12 +15,10 @@ import copy
 page_bg_img = """
 <style>
 [data-testid="stAppViewContainer"] {
-background-color: #FFF6F6;
 opacity: 0.8;
 background-size: 20px 20px;
 }
 [data-testid='stHeader']{
-display: none !important;
 }
 [data-testid = 'stAppViewBlockContainer']{
     max-width: 1200px;
@@ -54,7 +52,7 @@ if "connected" not in st.session_state:
 if "name_graph" not in st.session_state:
     st.session_state["name_graph"] = ""
 if "last_action" not in st.session_state:
-    st.session_state["last_action"] = ""
+    st.session_state["last_action"] = "a"
 
 
 # Crear listas de opciones para las barras de navegación
@@ -62,12 +60,10 @@ options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda"]
 # Crear las barras de navegación como cajas de selección en la barra lateral
 option = st.sidebar.selectbox("File", options_file)
 
-
 if option == "Archivo":
     opcionesArchivo = [
         "Nuevo grafo",
         "Open/Close",
-        "Cerrar",
         "Guardar Como",
         "Import/Export",
         "Salir",
@@ -76,7 +72,7 @@ if option == "Archivo":
         menu_title=None,
         options=opcionesArchivo,
         default_index=0,
-        icons=["list-task", "gear"],
+        icons=["plus-circle", "gear", "download", "file-earmark", "x-square"],
         orientation="vertical",
         styles={},
     )
@@ -123,9 +119,9 @@ if option == "Archivo":
         json_str = json.dumps(graph_data)
 
         # Crea un botón de descarga para el archivo JSON
-        name = st.text_input("Nombre del archivo")
+        name = st.sidebar.text_input("Nombre del archivo")
 
-        st.download_button(
+        st.sidebar.download_button(
             label="Descargar JSON",
             data=json_str,
             file_name=name + ".json",
@@ -137,7 +133,7 @@ if option == "Archivo":
             menu_title=None,
             options=["Open", "Close"],
             default_index=0,
-            icons=["list-task", "gear"],
+            icons=["envelope-open", "x-square"],
             orientation="horizontal",
             styles={},
         )
@@ -177,7 +173,7 @@ if option == "Archivo":
             menu_title=None,
             options=["Export", "Import", "Export to XLSX", "Export to image"],
             default_index=0,
-            icons=["list-task", "gear"],
+            icons=["list-task", "filetype-txt", "filetype-xlsx", "card-image"],
             orientation="horizontal",
             styles={},
         )
@@ -400,6 +396,7 @@ if option == "Archivo":
                                 st.session_state["edges"].append(new_edge_2)
 
                         st.write(st.session_state["edges"])
+                        st.session_state["last_action"] = "New Node"
 
         if graph_option == "Aleatorio":
             # Crear un expander para el grafo en la barra lateral
@@ -462,6 +459,7 @@ if option == "Archivo":
                         st.session_state["edges"] = edges
 
                         st.session_state["graph"] = True
+                        st.session_state["last_action"] = "New Node"
 
 
 elif option == "Editar":
@@ -489,8 +487,20 @@ elif option == "Editar":
             styles={},
         )
         if selected == "Agregar Nodo":
-            node_id = st.sidebar.text_input("ID del Nodo")
-            node_label = st.sidebar.text_input("Etiqueta del Nodo")
+            node_id = st.sidebar.text_input("ID del nodo")
+            node_label = st.sidebar.text_input("Nombre del nodo")
+            node_color = st.sidebar.color_picker("Color del nodo")
+            node_shape = st.sidebar.selectbox(
+                        "Forma del nodo",
+                        [
+                            "diamond",
+                            "dot",
+                            "square",
+                            "star",
+                            "triangle",
+                            "triangleDown",
+                        ],
+                    )
 
             if st.sidebar.button("Agregar"):
                 # Hacer una copia profunda del estado actual antes de agregar un nuevo nodo
@@ -499,11 +509,75 @@ elif option == "Editar":
                 )
 
                 new_node = Node(
-                    id=node_id,
-                    label=node_label,
+                    id= node_id,
+                    label= node_label,
+                    color= node_color,
+                    shape = node_shape
                 )
 
                 st.session_state["nodes"].append(new_node)
+                st.session_state["last_action"] = "New Node"
+        
+        elif selected == "Editar Nodo":
+            node_id = st.sidebar.selectbox(
+                "Nodo de inicio de la arista",
+                [node.id for node in st.session_state["nodes"]],
+            )
+
+            for node in st.session_state["nodes"]:
+                if node_id == node.id:
+                    actual_node = node
+            
+            shape_list = [
+                            "diamond",
+                            "dot",
+                            "square",
+                            "star",
+                            "triangle",
+                            "triangleDown",
+                        ]
+            for shape in shape_list:
+                if shape == actual_node.shape:
+                    index_shape = shape_list.index(shape)
+
+            node_label = st.sidebar.text_input("Etiqueta del nodo: ", actual_node.label)
+            node_color = st.sidebar.color_picker("Color del nodo", actual_node.color)
+            node_shape = st.sidebar.selectbox(
+                        "Forma del nodo",
+                        [
+                            "diamond",
+                            "dot",
+                            "square",
+                            "star",
+                            "triangle",
+                            "triangleDown",
+                        ], index = index_shape
+                    )
+            if st.sidebar.button("Cambiar Nodo"):
+
+                index = st.session_state["nodes"].index(node)
+
+                st.session_state["nodes"][index].label = node_label
+                st.session_state["nodes"][index].color = node_color
+                st.session_state["nodes"][index].shape = node_shape
+
+                st.session_state["last_action"] = "Edit Node"
+        elif selected == "Eliminar Nodo":
+            node_id = st.sidebar.selectbox(
+                "Nodo de inicio de la arista",
+                [node.id for node in st.session_state["nodes"]],
+            )
+
+            for node in st.session_state["nodes"]:
+                if node_id == node.id:
+                    actual_node = node
+            
+            if st.sidebar.button("Eliminar"):
+
+                st.session_state["nodes"].remove(node)
+
+                st.session_state["last_action"] = "Delete Node"
+
 
     elif selected == "Arista":
         selected = option_menu(
@@ -515,26 +589,56 @@ elif option == "Editar":
             styles={},
         )
         if selected == "Agregar Arista":
-            # Hacer una copia profunda del estado actual antes de agregar una nueva arista
             st.session_state["copy_edges"] = copy.deepcopy(st.session_state["edges"])
 
             source = st.sidebar.selectbox(
-                "Nodo de origen", [node.id for node in st.session_state["nodes"]]
+                "Nodo de inicio de la arista",
+                [node.id for node in st.session_state["nodes"]],
             )
             target = st.sidebar.selectbox(
-                "Nodo de destino", [node.id for node in st.session_state["nodes"]]
+                "Nodo final de la arista",
+                [node.id for node in st.session_state["nodes"]],
             )
-            edge_label = st.sidebar.text_input("Etiqueta de la arista")
+
+            edge_label = ""
+            if st.session_state["weighted"]:
+                # Campo de texto para introducir la etiqueta de la arista
+                edge_label = st.sidebar.text_input("Etiqueta de la arista")
+            else:
+                edge_label = ""
+
+            edge_color = st.sidebar.color_picker("Color de la arista")
 
             if st.sidebar.button("Agregar"):
-                new_edge = Edge(source=source, target=target, label=edge_label)
+                new_edge = Edge(source=source, target=target, label=edge_label, color=edge_color)
                 st.session_state["edges"].append(new_edge)
+                st.session_state["last_action"] = "New Edge"
+        
+        elif selected == "Editar Arista":
+            pass
+
+        elif selected == "Eliminar Arista":
+            actual_source = st.sidebar.selectbox("Seleccione arista: ", 
+                                               [(edge.source, edge.to) for edge in st.session_state["edges"]])
+            
+            for edge in st.session_state["edges"]:
+                if edge.source == actual_source[0] and edge.to == actual_source[1]:
+                    actual_edge = edge
+            
+            st.sidebar.write(actual_source)
+
+            if st.sidebar.button("Eliminar"):
+
+                st.session_state["edges"].remove(actual_edge)
+                
+                st.session_state["last_action"] = "Delete Edge"
 
     elif selected == "Deshacer":
         # Deshacer el último cambio en los nodos o las aristas
-        if len(st.session_state["nodes"]) > len(st.session_state["copy_nodes"]):
+        st.sidebar.write(st.session_state["last_action"])
+        if (len(st.session_state["nodes"]) > len(st.session_state["copy_nodes"])) and st.session_state["last_action"] == "New Node":
             st.session_state["nodes"] = copy.deepcopy(st.session_state["copy_nodes"])
-        elif len(st.session_state["edges"]) > len(st.session_state["copy_edges"]):
+        elif len(st.session_state["edges"]) > len(st.session_state["copy_edges"]) and st.session_state["last_action"] == "New Edge":
             st.session_state["edges"] = copy.deepcopy(st.session_state["copy_edges"])
 
 
