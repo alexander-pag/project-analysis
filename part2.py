@@ -146,3 +146,45 @@ else:
     components = get_components(G)
     for i, component in enumerate(components):
         st.write(f"Componente {i+1}: {component}")
+
+
+"""
+# Determinar si el grafo corresponde a un grafo bipartito o no
+            # Crear lista de adyacencia
+            adj = {node.id: [] for node in st.session_state["nodes"]}
+            for edge in st.session_state["edges"]:
+                adj[edge.source].append(edge.to)
+                adj[edge.to].append(edge.source)
+
+            # Crear lista de nodos visitados
+            visited = {node.id: False for node in st.session_state["nodes"]}
+
+            # Crear lista de colores
+            colors = {node.id: -1 for node in st.session_state["nodes"]}
+
+            # Función para determinar si el grafo es bipartito
+            def is_bipartite(node, color):
+                visited[node] = True
+                colors[node] = color
+                for neighbor in adj[node]:
+                    if not visited[neighbor]:
+                        if not is_bipartite(neighbor, 1 - color):
+                            return False
+                    elif colors[neighbor] == colors[node]:
+                        return False
+                return True
+
+            # Verificar si el grafo es bipartito
+            bipartite = True
+            for node in st.session_state["nodes"]:
+                if not visited[node.id]:
+                    bipartite = is_bipartite(node.id, 0)
+                    if not bipartite:
+                        break
+
+            # Mostrar resultado
+            if bipartite:
+                st.write("El grafo es bipartito")
+            else:
+                st.write("El grafo no es bipartito")
+"""

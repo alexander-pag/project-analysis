@@ -27,3 +27,6 @@ class Utils:
             "square",
         ]
         return random.choice(shapes)
+
+    def generateWeight(self):
+        return random.randint(1, 100)

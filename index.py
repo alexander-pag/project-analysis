@@ -73,7 +73,7 @@ if option == "Archivo":
         options=opcionesArchivo,
         default_index=0,
         icons=["plus-circle", "gear", "download", "file-earmark", "x-square"],
-        orientation="vertical",
+        orientation="horizontal",
         styles={},
     )
 
@@ -90,27 +90,36 @@ if option == "Archivo":
                     "generalData1": 100,
                     "generalData2": "Alg",
                     "generalData3": 300,
+                    "isDirected": st.session_state["directed"],
+                    "isWeighted": st.session_state["weighted"],
+                    "isConnected": st.session_state["connected"],
+                    "isConex": st.session_state["conex"],
                 }
             ]
         }
 
         for node in st.session_state["nodes"]:
             linked_nodes = []
+            # Añadir los nodos que tengan una arista con el nodo actual
             for edge in st.session_state["edges"]:
-                if edge.source == node.id:
+                if int(edge.source) == node.id:
                     linked_nodes.append(
                         {
                             "node_id": edge.to,
                             "weight": int(edge.label) if edge.label else 0,
+                            "color": edge.color,
                         }
                     )
+
             node_data = {
                 "id": node.id,
                 "label": node.label,
+                "color": node.color,
+                "shape": node.shape,
                 "data": {},
                 "type": "",
                 "linkedTo": linked_nodes,
-                "radius": node.size / 50,
+                "radius": node.size,
                 "coordinates": {"x": 0, "y": 0},
             }
             graph_data["graph"][0]["data"].append(node_data)
@@ -144,15 +153,15 @@ if option == "Archivo":
             if uploaded_file is not None:
                 data = json.load(uploaded_file)
 
+                st.write(data["graph"][0]["isDirected"])
+
                 for graph in data["graph"]:
                     for node_data in graph["data"]:
                         node = Node(
                             id=node_data["id"],
                             label=node_data["label"],
-                            size=node_data["radius"]
-                            * 50,  # Ajusta el tamaño según tus necesidades
-                            shape="circularImage",
-                            image="http://marvel-force-chart.surge.sh/marvel_force_chart_img/top_spiderman.png",  # Ajusta la imagen según tus necesidades
+                            color=node_data["color"],
+                            shape=node_data["shape"],
                         )
                         st.session_state["nodes"].append(node)
 
@@ -160,13 +169,17 @@ if option == "Archivo":
                             edge = Edge(
                                 source=node.id,
                                 target=linked_node["node_id"],
-                                label=str(linked_node["weight"]),
+                                color=linked_node["color"],
+                                label=(
+                                    str(linked_node["weight"])
+                                    if linked_node["weight"]
+                                    else ""
+                                ),
                             )
                             st.session_state["edges"].append(edge)
         elif selected1 == "Close":
             st.session_state["nodes"] = []
             st.session_state["edges"] = []
-    # Si el usuario selecciona 'New Graph', muestra otro selectbox con las opciones 'Personalizado' y 'Aleatorio'
 
     elif selected == "Import/Export":
         selectedIE = option_menu(
@@ -205,16 +218,6 @@ if option == "Archivo":
                             )
                             st.session_state["edges"].append(edge)
 
-            # Determinar si el grafo es bipartito o no
-            is_bipartite = True
-            for edge in st.session_state["edges"]:
-                if edge.source == edge.to:
-                    is_bipartite = False
-                    break
-
-            if is_bipartite:
-                st.write("El grafo es bipartito")
-
         elif selectedIE == "Export to image":
             # Definir las coordenadas del área de la captura de pantalla
             x, y, width, height = 580, 320, 1150, 720
@@ -245,7 +248,7 @@ if option == "Archivo":
             # Recorre cada nodo y arista en el estado de la sesión
             for node in st.session_state["nodes"]:
                 linked_nodes = [
-                    {"node_id": edge.to, "weight": edge.label}
+                    {"node_id": edge.to, "weight": edge.label, "color": edge.color}
                     for edge in st.session_state["edges"]
                     if edge.source == node.id
                 ]
@@ -258,7 +261,7 @@ if option == "Archivo":
                         "type": "",
                         "linkedTo": ", ".join(
                             [
-                                f"(node_id: {ln['node_id']}) (weight: {ln['weight']})"
+                                f"(node_id: {ln['node_id']}) (weight: {ln['weight']}) (color: {ln['color']})"
                                 for ln in linked_nodes
                             ]
                         ),
@@ -270,8 +273,21 @@ if option == "Archivo":
             # Crea un DataFrame para los nodos
             nodes_df = pd.DataFrame(nodes_data)
 
-            # Escribe el DataFrame a un archivo de Excel
-            nodes_df.to_excel("graph.xlsx", index=False)
+            # Crea un objeto BytesIO para guardar el archivo XLSX
+            buf = io.BytesIO()
+
+            # Guarda los datos de los nodos en un archivo XLSX
+            nodes_df.to_excel(buf, index=False)
+
+            date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Crea un botón de descarga para el archivo XLSX
+            st.download_button(
+                label="Descargar XLSX",
+                data=buf.getvalue(),
+                file_name="graph-" + date + ".xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
 
     if selected == "Nuevo grafo":
         options_graph = ["Select", "Personalizado", "Aleatorio"]
@@ -395,18 +411,20 @@ if option == "Archivo":
                                 st.session_state["edges"].append(new_edge_1)
                                 st.session_state["edges"].append(new_edge_2)
 
-                        st.write(st.session_state["edges"])
                         st.session_state["last_action"] = "New Node"
 
         if graph_option == "Aleatorio":
             # Crear un expander para el grafo en la barra lateral
             with st.sidebar.expander("Grafo"):
                 with st.form(key="graph_form"):
+                    # Campo de texto para introducir el nombre del grafo
+                    st.session_state["name_graph"] = st.text_input("Nombre del Grafo")
+
                     # Checkbox para elegir si el grafo es dirigido
                     st.session_state["directed"] = st.checkbox("¿Es dirigido?")
 
                     # Checkbox para elegir si el grafo es ponderado
-                    weighted = st.checkbox("¿Es ponderado?")
+                    st.session_state["weighted"] = st.checkbox("¿Es ponderado?")
 
                     # Checkbox para elegir si el grafo es completo
                     st.session_state["connected"] = st.checkbox("¿Es completo?")
@@ -452,7 +470,26 @@ if option == "Archivo":
                             )
                             for n in G.nodes()
                         ]
-                        edges = [Edge(str(u), str(v)) for u, v in G.edges()]
+                        if st.session_state["weighted"]:
+                            edges = [
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    label=str(U.generateWeight()),
+                                    color=U.generateColor(),
+                                )
+                                for e in G.edges()
+                            ]
+                        else:
+                            edges = [
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    color=U.generateColor(),
+                                    label="",
+                                )
+                                for e in G.edges()
+                            ]
 
                         # Guardar los nodos y aristas en el estado de sesión
                         st.session_state["nodes"] = nodes
