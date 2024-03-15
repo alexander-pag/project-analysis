@@ -33,9 +33,18 @@ for key, value in default_session_state.items():
 # Crear listas de opciones para las barras de navegación
 options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda", "Ventana"]
 # Crear las barras de navegación como cajas de selección en la barra lateral
-option = st.sidebar.selectbox("File", options_file)
+with st.sidebar:
+    option = option_menu(
+        menu_title=None,
+        options=options_file,
+        default_index=0,
+        icons=[],
+        orientation="vertical",
+        styles={},
+    )
 
 if option == "Archivo":
+    st.session_state["window"] = False
     opcionesArchivo = [
         "Nuevo grafo",
         "Open/Close",
@@ -131,6 +140,7 @@ if option == "Archivo":
 
 
 elif option == "Editar":
+    st.session_state["window"] = False
     opcionesEditar = [
         "Nodo",
         "Arista",
@@ -141,7 +151,7 @@ elif option == "Editar":
         options=opcionesEditar,
         default_index=0,
         icons=["list-task", "gear", "x-square"],
-        orientation="vertical",
+        orientation="horizontal",
         styles={},
     )
 
@@ -204,7 +214,7 @@ if not st.session_state["window"]:
         height=600,
         directed=st.session_state["directed"],
         physics=False,
-        hierarchical=True,
+        hierarchical=False,
     )
 
     # Dibuja tu gráfico
