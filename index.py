@@ -188,7 +188,7 @@ if option == "Archivo":
         elif selectedIE == "Export to XLSX" and st.session_state["graph"]:
             U.export_to_xlsx(st.session_state["nodes"], st.session_state["edges"])
 
-    if selected == "Nuevo grafo" and not st.session_state["graph"]:
+    if selected == "Nuevo grafo":
         options_graph = ["Select", "Personalizado", "Aleatorio"]
         graph_option = st.sidebar.selectbox("Choose", options_graph)
 

@@ -213,6 +213,7 @@ class Utils:
                             size=15,
                             shape=node_shape,
                             color=node_color,
+                            font={'color': "#FFFFFF"}
                         )
 
                         st.session_state["nodes"].append(new_node)
@@ -493,7 +494,7 @@ class Utils:
                 if actual_edge_2:
                     st.session_state["edges"].remove(actual_edge_2)
                 st.session_state["last_action"] = "Delete Edge"
-
+                
     def generate_graph_random(self):
         # Crear un expander para el grafo en la barra lateral
         with st.sidebar.expander("Grafo"):
@@ -537,10 +538,15 @@ class Utils:
                         # Crear un grafo aleatorio
                         G = nx.gnp_random_graph(
                             int(node_qty),
-                            0.5,
+                            0.1,
                             directed=st.session_state["directed"],
                         )
 
+                    pos = set()
+                    while len(pos) < 1500:
+                        pos.add(random.randint(0, 1500))
+
+                    pos = list(pos)
                     # Convertir el grafo de networkx a formato agraph
                     nodes = [
                         Node(
@@ -549,6 +555,8 @@ class Utils:
                             color=self.generateColor(),
                             shape=self.generateShape(),
                             size=15,
+                            font={'color': "#FFFFFF"},
+                            x=pos[random.randint(0, 1490)], y=pos[random.randint(0, 1490)] 
                         )
                         for n in G.nodes()
                     ]
