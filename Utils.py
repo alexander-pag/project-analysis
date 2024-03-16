@@ -77,7 +77,9 @@ class Utils:
                     linked_nodes.append(
                         {
                             "node_id": edge.to,
-                            "weight": int(edge.label) if edge.label else 0,
+                            "weight": (
+                                int(edge.label) if st.session_state["weighted"] else 0
+                            ),
                             "color": edge.color,
                         }
                     )
@@ -183,53 +185,53 @@ class Utils:
                         )
                         index = list.index(actual_node.shape)
 
-                        # Campo de texto para introducir el nombre del nodo
-                        node_name = st.text_input(
-                            "Nombre del nodo", actual_node.label if actual_node else ""
+                # Campo de texto para introducir el nombre del nodo
+                node_name = st.text_input(
+                    "Nombre del nodo", actual_node.label if actual_node else ""
+                )
+
+                # Selector de color para elegir el color del nodo
+                node_color = st.color_picker(
+                    "Color del nodo",
+                    actual_node.color if actual_node else "#ffffff",
+                )
+
+                # Selector de forma del nodo, como diccionario
+                node_shape = st.selectbox("Forma del nodo", list, index=index)
+
+                # Botón para agregar el nodo al grafo
+                if selected == "Agregar Nodo":
+                    add_node_button = st.button("Agregar nodo")
+
+                    if add_node_button:
+                        st.session_state["copy_nodes"] = copy.deepcopy(
+                            st.session_state["nodes"]
+                        )
+                        new_node = Node(
+                            id=node_id,
+                            label=node_name,
+                            size=15,
+                            shape=node_shape,
+                            color=node_color,
                         )
 
-                        # Selector de color para elegir el color del nodo
-                        node_color = st.color_picker(
-                            "Color del nodo",
-                            actual_node.color if actual_node else "#ffffff",
+                        st.session_state["nodes"].append(new_node)
+                        st.session_state["last_action"] = "New Node"
+
+                elif selected == "Editar Nodo":
+                    if st.button("Cambiar Nodo"):
+
+                        st.session_state["copy_nodes"] = copy.deepcopy(
+                            st.session_state["nodes"]
                         )
 
-                        # Selector de forma del nodo, como diccionario
-                        node_shape = st.selectbox("Forma del nodo", list, index=index)
+                        index = st.session_state["nodes"].index(actual_node)
 
-                        # Botón para agregar el nodo al grafo
-                        if selected == "Agregar Nodo":
-                            add_node_button = st.button("Agregar nodo")
+                        st.session_state["nodes"][index].label = node_name
+                        st.session_state["nodes"][index].color = node_color
+                        st.session_state["nodes"][index].shape = node_shape
 
-                            if add_node_button:
-                                st.session_state["copy_nodes"] = copy.deepcopy(
-                                    st.session_state["nodes"]
-                                )
-                                new_node = Node(
-                                    id=node_id,
-                                    label=node_name,
-                                    size=15,
-                                    shape=node_shape,
-                                    color=node_color,
-                                )
-
-                                st.session_state["nodes"].append(new_node)
-                                st.session_state["last_action"] = "New Node"
-
-                        elif selected == "Editar Nodo":
-                            if st.button("Cambiar Nodo"):
-
-                                st.session_state["copy_nodes"] = copy.deepcopy(
-                                    st.session_state["nodes"]
-                                )
-
-                                index = st.session_state["nodes"].index(actual_node)
-
-                                st.session_state["nodes"][index].label = node_name
-                                st.session_state["nodes"][index].color = node_color
-                                st.session_state["nodes"][index].shape = node_shape
-
-                                st.session_state["last_action"] = "Edit Node"
+                        st.session_state["last_action"] = "Edit Node"
 
     def export_to_image(self):
         # Definir las coordenadas del área de la captura de pantalla
@@ -261,7 +263,11 @@ class Utils:
         # Recorre cada nodo y arista en el estado de la sesión
         for node in nodes_state:
             linked_nodes = [
-                {"node_id": edge.to, "weight": edge.label, "color": edge.color}
+                {
+                    "node_id": edge.to,
+                    "weight": edge.label if st.session_state["weighted"] else 0,
+                    "color": edge.color,
+                }
                 for edge in edges_state
                 if edge.source == node.id
             ]
@@ -394,12 +400,10 @@ class Utils:
                 "Seleccione arista: ",
                 [(edge.source, edge.to) for edge in st.session_state["edges"]],
             )
-
+            actual_edge_2 = None
             for edge in st.session_state["edges"]:
                 if edge.source == actual_source[0] and edge.to == actual_source[1]:
                     actual_edge = edge
-
-            st.sidebar.write(actual_source)
 
             edge_label = ""
             if st.session_state["weighted"]:
@@ -420,8 +424,25 @@ class Utils:
 
                 index = st.session_state["edges"].index(actual_edge)
 
-                st.session_state["edges"][index].label = edge_label
-                st.session_state["edges"][index].color = edge_color
+                if st.session_state["directed"]:
+                    st.session_state["edges"][index].label = edge_label
+                    st.session_state["edges"][index].color = edge_color
+
+                else:
+                    actual_edge_2 = next(
+                        (
+                            edge
+                            for edge in st.session_state["edges"]
+                            if edge.source == actual_source[1]
+                            and edge.to == actual_source[0]
+                        ),
+                        None,
+                    )
+                    index_2 = st.session_state["edges"].index(actual_edge_2)
+                    st.session_state["edges"][index].label = edge_label
+                    st.session_state["edges"][index].color = edge_color
+                    st.session_state["edges"][index_2].label = edge_label
+                    st.session_state["edges"][index_2].color = edge_color
 
                 st.session_state["last_action"] = "Edit Edge"
 
@@ -431,18 +452,46 @@ class Utils:
                 [(edge.source, edge.to) for edge in st.session_state["edges"]],
             )
 
-            actual_edge = next(
-                (
-                    edge
-                    for edge in st.session_state["edges"]
-                    if edge.source == actual_source[0] and edge.to == actual_source[1]
-                ),
-                None,
-            )
+            actual_edge_2 = None
+
+            if st.session_state["directed"]:
+                actual_edge = next(
+                    (
+                        edge
+                        for edge in st.session_state["edges"]
+                        if edge.source == actual_source[0]
+                        and edge.to == actual_source[1]
+                    ),
+                    None,
+                )
+
+            else:
+                actual_edge = next(
+                    (
+                        edge
+                        for edge in st.session_state["edges"]
+                        if edge.source == actual_source[0]
+                        and edge.to == actual_source[1]
+                    ),
+                    None,
+                )
+                actual_edge_2 = next(
+                    (
+                        edge
+                        for edge in st.session_state["edges"]
+                        if edge.source == actual_source[1]
+                        and edge.to == actual_source[0]
+                    ),
+                    None,
+                )
 
             if st.sidebar.button("Eliminar"):
-
+                st.session_state["copy_edges"] = copy.deepcopy(
+                    st.session_state["edges"]
+                )
                 st.session_state["edges"].remove(actual_edge)
+                if actual_edge_2:
+                    st.session_state["edges"].remove(actual_edge_2)
                 st.session_state["last_action"] = "Delete Edge"
 
     def generate_graph_random(self):
@@ -612,7 +661,7 @@ class Utils:
                 {
                     "Nodo de inicio": edge.source,
                     "Nodo final": edge.to,
-                    "Peso": edge.label,
+                    "Peso": int(edge.label) if st.session_state["weighted"] else 0,
                     "Color": edge.color,
                 }
                 for edge in st.session_state["edges"]

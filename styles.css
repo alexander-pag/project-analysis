@@ -22,3 +22,7 @@ ul,
 span {
   color: #000;
 }
+
+[data-testid="stMarkdownContainer"] {
+  color: #fff;
+}
