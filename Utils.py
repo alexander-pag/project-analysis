@@ -542,11 +542,7 @@ class Utils:
                             directed=st.session_state["directed"],
                         )
 
-                    pos = set()
-                    while len(pos) < 1500:
-                        pos.add(random.randint(0, 1500))
-
-                    pos = list(pos)
+                    pos = nx.circular_layout(G)
                     # Convertir el grafo de networkx a formato agraph
                     nodes = [
                         Node(
@@ -556,7 +552,7 @@ class Utils:
                             shape=self.generateShape(),
                             size=15,
                             font={'color': "#FFFFFF"},
-                            x=pos[random.randint(0, 1490)], y=pos[random.randint(0, 1490)] 
+                            x= pos[n][0] * 500, y = pos[n][1] * 500
                         )
                         for n in G.nodes()
                     ]
