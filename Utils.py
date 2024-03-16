@@ -9,7 +9,6 @@ import io
 from datetime import datetime
 import pandas as pd
 import networkx as nx
-import numpy as np
 
 
 class Utils:
@@ -116,6 +115,7 @@ class Utils:
                     label=node_data["label"],
                     color=node_data["color"],
                     shape=node_data["shape"],
+                    size=15,
                 )
                 st.session_state["nodes"].append(node)
 
@@ -131,7 +131,7 @@ class Utils:
                     st.session_state["edges"].append(edge)
 
     def add_node_to_graph(self, selected):
-        if selected == "Eliminar Nodo":
+        if selected == "Eliminar Nodo" and st.session_state["graph"]:
             node_id = st.sidebar.selectbox(
                 "Seleccione nodo: ",
                 [node.id for node in st.session_state["nodes"]],
@@ -163,72 +163,73 @@ class Utils:
                     "triangle",
                     "triangleDown",
                 ]
-                if selected == "Agregar Nodo":
+                if selected == "Agregar Nodo" and st.session_state["graph"]:
                     node_id = st.text_input("ID del nodo")
                     actual_node = None
                     index = 0
                 elif selected == "Editar Nodo":
-                    node_id = st.selectbox(
-                        "Seleccione nodo: ",
-                        [node.id for node in st.session_state["nodes"]],
-                    )
-                    actual_node = next(
-                        (
-                            node
-                            for node in st.session_state["nodes"]
-                            if node_id == node.id
-                        ),
-                        None,
-                    )
-                    index = list.index(actual_node.shape)
-
-                # Campo de texto para introducir el nombre del nodo
-                node_name = st.text_input(
-                    "Nombre del nodo", actual_node.label if actual_node else ""
-                )
-
-                # Selector de color para elegir el color del nodo
-                node_color = st.color_picker(
-                    "Color del nodo", actual_node.color if actual_node else "#ffffff"
-                )
-
-                # Selector de forma del nodo, como diccionario
-                node_shape = st.selectbox("Forma del nodo", list, index=index)
-
-                # Botón para agregar el nodo al grafo
-
-                if selected == "Agregar Nodo":
-                    add_node_button = st.button("Agregar nodo")
-
-                    if add_node_button:
-                        st.session_state["copy_nodes"] = copy.deepcopy(
-                            st.session_state["nodes"]
+                    if st.session_state["graph"]:
+                        node_id = st.selectbox(
+                            "Seleccione nodo: ",
+                            [node.id for node in st.session_state["nodes"]],
                         )
-                        new_node = Node(
-                            id=node_id,
-                            label=node_name,
-                            size=25,
-                            shape=node_shape,
-                            color=node_color,
+                        actual_node = next(
+                            (
+                                node
+                                for node in st.session_state["nodes"]
+                                if node_id == node.id
+                            ),
+                            None,
+                        )
+                        index = list.index(actual_node.shape)
+
+                        # Campo de texto para introducir el nombre del nodo
+                        node_name = st.text_input(
+                            "Nombre del nodo", actual_node.label if actual_node else ""
                         )
 
-                        st.session_state["nodes"].append(new_node)
-                        st.session_state["last_action"] = "New Node"
-
-                elif selected == "Editar Nodo":
-                    if st.button("Cambiar Nodo"):
-
-                        st.session_state["copy_nodes"] = copy.deepcopy(
-                            st.session_state["nodes"]
+                        # Selector de color para elegir el color del nodo
+                        node_color = st.color_picker(
+                            "Color del nodo",
+                            actual_node.color if actual_node else "#ffffff",
                         )
 
-                        index = st.session_state["nodes"].index(actual_node)
+                        # Selector de forma del nodo, como diccionario
+                        node_shape = st.selectbox("Forma del nodo", list, index=index)
 
-                        st.session_state["nodes"][index].label = node_name
-                        st.session_state["nodes"][index].color = node_color
-                        st.session_state["nodes"][index].shape = node_shape
+                        # Botón para agregar el nodo al grafo
+                        if selected == "Agregar Nodo":
+                            add_node_button = st.button("Agregar nodo")
 
-                        st.session_state["last_action"] = "Edit Node"
+                            if add_node_button:
+                                st.session_state["copy_nodes"] = copy.deepcopy(
+                                    st.session_state["nodes"]
+                                )
+                                new_node = Node(
+                                    id=node_id,
+                                    label=node_name,
+                                    size=15,
+                                    shape=node_shape,
+                                    color=node_color,
+                                )
+
+                                st.session_state["nodes"].append(new_node)
+                                st.session_state["last_action"] = "New Node"
+
+                        elif selected == "Editar Nodo":
+                            if st.button("Cambiar Nodo"):
+
+                                st.session_state["copy_nodes"] = copy.deepcopy(
+                                    st.session_state["nodes"]
+                                )
+
+                                index = st.session_state["nodes"].index(actual_node)
+
+                                st.session_state["nodes"][index].label = node_name
+                                st.session_state["nodes"][index].color = node_color
+                                st.session_state["nodes"][index].shape = node_shape
+
+                                st.session_state["last_action"] = "Edit Node"
 
     def export_to_image(self):
         # Definir las coordenadas del área de la captura de pantalla
@@ -269,6 +270,9 @@ class Utils:
                 {
                     "id": node.id,
                     "label": node.label,
+                    "color": node.color,
+                    "shape": node.shape,
+                    "size": node.size,
                     "data": {},
                     "type": "",
                     "linkedTo": ", ".join(
@@ -277,7 +281,7 @@ class Utils:
                             for ln in linked_nodes
                         ]
                     ),
-                    "radius": node.size / 50,
+                    "radius": node.size / 2,
                     "coordinates": {"x": 0, "y": 0},
                 }
             )
@@ -321,7 +325,7 @@ class Utils:
                 return [name, directed, weighted]
 
     def add_edge_to_graph(self, selected):
-        if selected == "Agregar Arista":
+        if selected == "Agregar Arista" and st.session_state["graph"]:
             # Crear un expander para la arista en la barra lateral
             with st.sidebar.expander("Arista"):
                 # Crear un formulario para la arista
@@ -385,7 +389,7 @@ class Utils:
 
                     st.session_state["last_action"] = "New Edge"
 
-        elif selected == "Editar Arista":
+        elif selected == "Editar Arista" and st.session_state["graph"]:
             actual_source = st.sidebar.selectbox(
                 "Seleccione arista: ",
                 [(edge.source, edge.to) for edge in st.session_state["edges"]],
@@ -421,7 +425,7 @@ class Utils:
 
                 st.session_state["last_action"] = "Edit Edge"
 
-        elif selected == "Eliminar Arista":
+        elif selected == "Eliminar Arista" and st.session_state["graph"]:
             actual_source = st.sidebar.selectbox(
                 "Seleccione arista: ",
                 [(edge.source, edge.to) for edge in st.session_state["edges"]],
@@ -495,29 +499,91 @@ class Utils:
                             id=n,
                             color=self.generateColor(),
                             shape=self.generateShape(),
+                            size=15,
                         )
                         for n in G.nodes()
                     ]
-                    if st.session_state["weighted"]:
-                        edges = [
-                            Edge(
-                                source=e[0],
-                                target=e[1],
-                                label=str(self.generateWeight()),
-                                color=self.generateColor(),
+
+                    # Inicializar la lista de aristas
+                    edges = []
+
+                    # Si el grafo es ponderado, agregar las aristas con pesos
+                    if st.session_state["weighted"] and st.session_state["directed"]:
+                        for e in G.edges():
+                            color = self.generateColor()
+                            label = str(self.generateWeight())
+                            edges.append(
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    label=label,
+                                    color=color,
+                                    width=1,
+                                )
                             )
-                            for e in G.edges()
-                        ]
-                    else:
-                        edges = [
-                            Edge(
-                                source=e[0],
-                                target=e[1],
-                                color=self.generateColor(),
-                                label="",
+
+                    elif (
+                        st.session_state["weighted"]
+                        and not st.session_state["directed"]
+                    ):
+                        st.write("Ponderado no dirigido")
+                        for e in G.edges():
+                            color = self.generateColor()
+                            label = str(self.generateWeight())
+                            edges.append(
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    label=label,
+                                    color=color,
+                                    width=1,
+                                )
                             )
-                            for e in G.edges()
-                        ]
+                            edges.append(
+                                Edge(
+                                    source=e[1],
+                                    target=e[0],
+                                    label=label,
+                                    color=color,
+                                    width=1,
+                                )
+                            )
+
+                    elif (
+                        not st.session_state["weighted"]
+                        and st.session_state["directed"]
+                    ):
+                        for e in G.edges():
+                            edges.append(
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    color=self.generateColor(),
+                                    width=1,
+                                )
+                            )
+
+                    elif (
+                        not st.session_state["weighted"]
+                        and not st.session_state["directed"]
+                    ):
+                        for e in G.edges():
+                            edges.append(
+                                Edge(
+                                    source=e[0],
+                                    target=e[1],
+                                    color=self.generateColor(),
+                                    width=1,
+                                )
+                            )
+                            edges.append(
+                                Edge(
+                                    source=e[1],
+                                    target=e[0],
+                                    color=self.generateColor(),
+                                    width=1,
+                                )
+                            )
 
                     # Guardar los nodos y aristas en el estado de sesión
                     st.session_state["nodes"] = nodes

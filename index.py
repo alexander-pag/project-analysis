@@ -4,11 +4,20 @@ from streamlit_option_menu import option_menu
 import json
 from Utils import Utils
 import copy
+import pyautogui as pg
+
+st.set_page_config(
+    page_title="Graph Editor",
+    page_icon=":snake:",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
 
 U = Utils()
 
 css = U.load_css()
 st.markdown(css, unsafe_allow_html=True)
+
 
 # Verifica si ya existe un estado de sesión, si no, lo crea
 default_session_state = {
@@ -35,12 +44,61 @@ options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda", "Venta
 # Crear las barras de navegación como cajas de selección en la barra lateral
 with st.sidebar:
     option = option_menu(
-        menu_title=None,
+        menu_title="Menú de opciones",
         options=options_file,
         default_index=0,
-        icons=[],
+        icons=["file-earmark", "gear", "play", "tools", "question-circle", "window"],
         orientation="vertical",
         styles={},
+    )
+
+if option == "Ayuda":
+    st.session_state["window"] = True
+    st.write(
+        """
+        # Ayuda
+        - **Archivo**: En esta sección se encuentran las opciones para abrir, guardar y exportar el grafo.
+        - **Editar**: En esta sección se encuentran las opciones para agregar, editar y eliminar nodos y aristas.
+        - **Ejecutar**: En esta sección se encuentran las opciones para ejecutar algoritmos sobre el grafo.
+        - **Herramientas**: En esta sección se encuentran las opciones para realizar operaciones sobre el grafo.
+        - **Ayuda**: En esta sección se encuentran las opciones para obtener ayuda.
+        - **Ventana**: En esta sección se encuentran las opciones para mostrar la ventana de resultados.
+        """
+    )
+
+    st.write(
+        """
+        # Manual de usuario
+        - Si deseas obtener más información sobre el uso de la aplicación, puedes descargar el manual de usuario.
+        """
+    )
+
+    with open("manual.pdf", "rb") as pdf_file:
+        PDFbyte = pdf_file.read()
+
+        st.download_button(
+            label="Descargar Manual de Usuario",
+            data=PDFbyte,
+            file_name="manual.pdf",
+            mime="application/octet-stream",
+        )
+
+if option == "Herramientas":
+    st.session_state["window"] = True
+    st.write(
+        """
+        # Herramientas
+        - Opción no disponible por el momento.
+        """
+    )
+
+if option == "Ejecutar":
+    st.session_state["window"] = True
+    st.write(
+        """
+        # Ejecutar
+        - Opción no disponible por el momento.
+        """
     )
 
 if option == "Archivo":
@@ -56,12 +114,22 @@ if option == "Archivo":
         menu_title=None,
         options=opcionesArchivo,
         default_index=0,
-        icons=["plus-circle", "gear", "download", "file-earmark", "x-square"],
+        icons=[
+            "plus-circle",
+            "envelope-open",
+            "save",
+            "file-earmark-arrow-up",
+            "x-square",
+        ],
         orientation="horizontal",
         styles={},
     )
 
-    if selected == "Guardar Como":
+    if selected == "Salir":
+        # Cerrar la aplicación con ctrl+w
+        pg.hotkey("ctrl", "w")
+
+    elif selected == "Guardar Como" and st.session_state["graph"]:
         json_str = U.generate_graph_json(
             st.session_state["nodes"], st.session_state["edges"]
         )
@@ -77,7 +145,7 @@ if option == "Archivo":
             styles={},
         )
 
-        if selected1 == "Open":
+        if selected1 == "Open" and not st.session_state["graph"]:
             uploaded_file = st.sidebar.file_uploader(
                 "Elige un archivo JSON", type="json"
             )
@@ -87,20 +155,25 @@ if option == "Archivo":
                 U.open_json_file(data)
 
         elif selected1 == "Close":
+            st.session_state["graph"] = False
             st.session_state["nodes"] = []
             st.session_state["edges"] = []
 
     elif selected == "Import/Export":
         selectedIE = option_menu(
             menu_title=None,
-            options=["Export", "Import", "Export to XLSX", "Export to image"],
+            options=["Import to TXT", "Export to XLSX", "Export to image"],
             default_index=0,
-            icons=["list-task", "filetype-txt", "filetype-xlsx", "card-image"],
+            icons=[
+                "file-earmark-arrow-down",
+                "file-earmark-arrow-up",
+                "file-earmark-image",
+            ],
             orientation="horizontal",
             styles={},
         )
 
-        if selectedIE == "Import":
+        if selectedIE == "Import to TXT" and not st.session_state["graph"]:
             uploaded_file = st.sidebar.file_uploader(
                 "Elige un archivo de texto plano", type="txt"
             )
@@ -109,13 +182,13 @@ if option == "Archivo":
                 data = json.load(uploaded_file)
                 U.open_json_file(data)
 
-        elif selectedIE == "Export to image":
+        elif selectedIE == "Export to image" and st.session_state["graph"]:
             U.export_to_image()
 
-        elif selectedIE == "Export to XLSX":
+        elif selectedIE == "Export to XLSX" and st.session_state["graph"]:
             U.export_to_xlsx(st.session_state["nodes"], st.session_state["edges"])
 
-    if selected == "Nuevo grafo":
+    if selected == "Nuevo grafo" and not st.session_state["graph"]:
         options_graph = ["Select", "Personalizado", "Aleatorio"]
         graph_option = st.sidebar.selectbox("Choose", options_graph)
 
@@ -150,7 +223,7 @@ elif option == "Editar":
         menu_title=None,
         options=opcionesEditar,
         default_index=0,
-        icons=["list-task", "gear", "x-square"],
+        icons=["circle", "arrows", "arrow-counterclockwise"],
         orientation="horizontal",
         styles={},
     )
@@ -160,7 +233,7 @@ elif option == "Editar":
             menu_title=None,
             options=["Agregar Nodo", "Editar Nodo", "Eliminar Nodo"],
             default_index=0,
-            icons=["list-task", "gear"],
+            icons=["plus-circle", "gear", "trash"],
             orientation="horizontal",
             styles={},
         )
@@ -178,7 +251,7 @@ elif option == "Editar":
             menu_title=None,
             options=["Agregar Arista", "Editar Arista", "Eliminar Arista"],
             default_index=0,
-            icons=["list-task", "gear"],
+            icons=["plus-circle", "gear", "trash"],
             orientation="horizontal",
             styles={},
         )

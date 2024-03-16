@@ -5,6 +5,7 @@
 }
 
 [data-testid="stHeader"] {
+  display: none;
 }
 
 [data-testid="stAppViewBlockContainer"] {
@@ -15,4 +16,9 @@
   font-size: 40px;
   font-weight: bold;
   color: #435585;
+}
+
+ul,
+span {
+  color: #000;
 }
