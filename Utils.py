@@ -164,6 +164,7 @@ class Utils:
                     "star",
                     "triangle",
                     "triangleDown",
+                    "hexagon"
                 ]
                 if selected == "Agregar Nodo" and st.session_state["graph"]:
                     node_id = st.text_input("ID del nodo")
