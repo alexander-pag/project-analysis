@@ -113,3 +113,91 @@ class Graph:
 
             self.add_node(id, label, coordinates, radius, type, data)
             self.node_dict[id].adjacent = linked_to
+
+    def create_adjacency_list(self, nodes, edges):
+        """
+        Crea una lista de adyacencia a partir de los nodos y aristas dados.
+        Args:
+            nodes (list): Lista de nodos.
+            edges (list): Lista de aristas.
+        Returns:
+            dict: Lista de adyacencia.
+        """
+        adj = {node.id: [] for node in nodes}
+        for edge in edges:
+            adj[edge.source].append(edge.to)
+            adj[edge.to].append(edge.source)
+        return adj
+
+    def is_bipartite(self, node, color, visited, colors, adj):
+        """
+        Determina si el grafo es bipartito utilizando búsqueda en profundidad.
+        Args:
+            node (int): Nodo actual.
+            color (int): Color del nodo actual (0 o 1).
+            visited (dict): Diccionario de nodos visitados.
+            colors (dict): Diccionario de colores de nodos.
+            adj (dict): Lista de adyacencia.
+        Returns:
+            bool: True si el grafo es bipartito, False en caso contrario.
+        """
+        visited[node] = True
+        colors[node] = color
+        for neighbor in adj[node]:
+            if not visited[neighbor]:
+                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj):
+                    return False
+            elif colors[neighbor] == colors[node]:
+                return False
+        return True
+
+    def check_bipartite(self, nodes, edges):
+        """
+        Verifica si el grafo es bipartito.
+        Args:
+            nodes (list): Lista de nodos.
+            edges (list): Lista de aristas.
+        Returns:
+            bool: True si el grafo es bipartito, False en caso contrario.
+        """
+        adj = self.create_adjacency_list(nodes, edges)
+        visited = {node.id: False for node in nodes}
+        colors = {node.id: -1 for node in nodes}
+        for node in nodes:
+            if not visited[node.id]:
+                if not self.is_bipartite(node.id, 0, visited, colors, adj):
+                    return False
+        return True
+
+    def find_connected_components(self, nodes, edges):
+        """
+        Encuentra los componentes conectados en el grafo.
+        Args:
+            nodes (list): Lista de nodos.
+            edges (list): Lista de aristas.
+        Returns:
+            list: Lista de componentes conectados (cada componente es una lista de nodos).
+        """
+        adj = self.create_adjacency_list(nodes, edges)
+        visited = {node.id: False for node in nodes}
+        components = []
+        for node in nodes:
+            if not visited[node.id]:
+                components.append([])
+                self.is_connected(node.id, visited, components[-1], adj)
+        return components
+
+    def is_connected(self, node, visited, component, adj):
+        """
+        Determina si el grafo es conexo utilizando búsqueda en profundidad.
+        Args:
+            node (int): Nodo actual.
+            visited (dict): Diccionario de nodos visitados.
+            component (list): Lista de nodos en el componente conectado actual.
+            adj (dict): Lista de adyacencia.
+        """
+        visited[node] = True
+        component.append(node)
+        for neighbor in adj[node]:
+            if not visited[neighbor]:
+                self.is_connected(neighbor, visited, component, adj)

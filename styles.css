@@ -1,5 +1,5 @@
 [data-testid="stAppViewContainer"] {
-  background-color: azure;
+  background-color: #31363f;
   opacity: 0.8;
   background-size: 20px 20px;
 }
@@ -23,6 +23,6 @@ span {
   color: #000;
 }
 
-[data-testid="stMarkdownContainer"] {
+[data-testid="stMarkdownContainer"] > p {
   color: #fff;
 }
