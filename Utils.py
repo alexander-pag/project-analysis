@@ -562,6 +562,7 @@ class Utils:
                             shape=self.generateShape(),
                             size=15,
                             font={'color': "#FFFFFF"},
+                            physics = True
                             #x= pos[n][0] * 500, y = pos[n][1] * 500
                         )
                         for n in G.nodes()
@@ -688,19 +689,26 @@ class Utils:
         col2.markdown("<span id='dataframes'>Aristas</span>", unsafe_allow_html=True)
         col2.dataframe(edges_df, 600, 500)
 
-    def analyze_graph(self, nodes, edges):
+    def analyze_graph(self, nodes, edges, b):
         is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
         components = st.session_state["G"].find_connected_components(nodes, edges)
 
-        st.write("El grafo es bipartito: ", is_bipartite)
-        st.write("Componentes conectados:")
-        for i, component in enumerate(components):
-            st.write(f"Componente {i + 1}: {component}")
+        if b:
+            st.write("El grafo es bipartito: ", is_bipartite[0])
+            st.write("Componentes conectados:")
+            for i, component in enumerate(components):
+                st.write(f"Componente {i + 1}: {component}")
         
         return is_bipartite, components
     
     def posicionate(self):
-        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"], False)
+        st.sidebar.write(is_bipartite)
+
+        com = []
+        for c in components:
+            if len(c) >  len(com):
+                com = c
 
         # Convertimos el gráfico a un objeto NetworkX
         g = nx.Graph()
@@ -713,8 +721,8 @@ class Utils:
         for edge in st.session_state["edges"]:
             g.add_edge(edge.source, edge.to)
 
-        if is_bipartite:
-            pos = nx.bipartite_layout(g, components[0])
+        if is_bipartite[0]:
+            pos = nx.bipartite_layout(g, is_bipartite[1])
         else:
             pos = nx.circular_layout(g)
         

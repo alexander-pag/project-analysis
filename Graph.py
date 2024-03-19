@@ -129,7 +129,7 @@ class Graph:
             adj[edge.to].append(edge.source)
         return adj
 
-    def is_bipartite(self, node, color, visited, colors, adj):
+    def is_bipartite(self, node, color, visited, colors, adj, subset1, subset2):
         """
         Determina si el grafo es bipartito utilizando búsqueda en profundidad.
         Args:
@@ -138,14 +138,20 @@ class Graph:
             visited (dict): Diccionario de nodos visitados.
             colors (dict): Diccionario de colores de nodos.
             adj (dict): Lista de adyacencia.
+            subset1 (set): Conjunto para el primer subconjunto.
+            subset2 (set): Conjunto para el segundo subconjunto.
         Returns:
             bool: True si el grafo es bipartito, False en caso contrario.
         """
         visited[node] = True
         colors[node] = color
+        if color == 0:
+            subset1.add(node)
+        else:
+            subset2.add(node)
         for neighbor in adj[node]:
             if not visited[neighbor]:
-                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj):
+                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj, subset1, subset2):
                     return False
             elif colors[neighbor] == colors[node]:
                 return False
@@ -153,21 +159,23 @@ class Graph:
 
     def check_bipartite(self, nodes, edges):
         """
-        Verifica si el grafo es bipartito.
+        Verifica si el grafo es bipartito y devuelve los subconjuntos.
         Args:
             nodes (list): Lista de nodos.
             edges (list): Lista de aristas.
         Returns:
-            bool: True si el grafo es bipartito, False en caso contrario.
+            tuple: (bool, set, set). True si el grafo es bipartito, False en caso contrario. Conjuntos que representan los dos subconjuntos.
         """
         adj = self.create_adjacency_list(nodes, edges)
         visited = {node.id: False for node in nodes}
         colors = {node.id: -1 for node in nodes}
+        subset1, subset2 = set(), set()
         for node in nodes:
             if not visited[node.id]:
-                if not self.is_bipartite(node.id, 0, visited, colors, adj):
-                    return False
-        return True
+                if not self.is_bipartite(node.id, 0, visited, colors, adj, subset1, subset2):
+                    return False, set(), set()
+        return True, subset1, subset2
+
 
     def find_connected_components(self, nodes, edges):
         """

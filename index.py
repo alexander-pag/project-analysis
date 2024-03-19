@@ -297,3 +297,6 @@ if not st.session_state["window"]:
     return_value = agraph(
         nodes=st.session_state["nodes"], edges=st.session_state["edges"], config=config
     )
+
+if st.session_state["graph"]:
+    U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)
