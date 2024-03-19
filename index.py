@@ -20,7 +20,6 @@ G = Graph()
 css = U.load_css()
 st.markdown(css, unsafe_allow_html=True)
 
-
 # Verifica si ya existe un estado de sesión, si no, lo crea
 default_session_state = {
     "graph": False,
@@ -35,6 +34,7 @@ default_session_state = {
     "name_graph": "",
     "last_action": "a",
     "window": False,
+    "G": G
 }
 
 for key, value in default_session_state.items():
@@ -155,20 +155,7 @@ if option == "Archivo":
                 data = json.load(uploaded_file)
 
                 U.open_json_file(data)
-
-            is_bipartite = G.check_bipartite(
-                st.session_state["nodes"], st.session_state["edges"]
-            )
-
-            # Encontrar los componentes conectados
-            components = G.find_connected_components(
-                st.session_state["nodes"], st.session_state["edges"]
-            )
-
-            st.write("El grafo es bipartito: ", is_bipartite)
-            st.write("Componentes conectados:")
-            for i, component in enumerate(components):
-                st.write(f"Componente {i + 1}: {component}")
+                U.posicionate()
 
         elif selected1 == "Close":
             st.session_state["graph"] = False

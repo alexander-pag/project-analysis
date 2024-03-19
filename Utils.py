@@ -117,6 +117,7 @@ class Utils:
                     label=node_data["label"],
                     color=node_data["color"],
                     shape=node_data["shape"],
+                    font={'color': "#FFFFFF"},
                     size=15,
                 )
                 st.session_state["nodes"].append(node)
@@ -131,6 +132,8 @@ class Utils:
                         ),
                     )
                     st.session_state["edges"].append(edge)
+
+                    st.session_state["graph"] = True
 
     def add_node_to_graph(self, selected):
         if selected == "Eliminar Nodo" and st.session_state["graph"]:
@@ -153,6 +156,7 @@ class Utils:
                 st.session_state["nodes"].remove(actual_node)
 
                 st.session_state["last_action"] = "Delete Node"
+                self.posicionate()
 
         elif selected == "Agregar Nodo" or selected == "Editar Nodo":
             with st.sidebar.expander("Nodo"):
@@ -170,21 +174,20 @@ class Utils:
                     node_id = st.text_input("ID del nodo")
                     actual_node = None
                     index = 0
-                elif selected == "Editar Nodo":
-                    if st.session_state["graph"]:
-                        node_id = st.selectbox(
-                            "Seleccione nodo: ",
-                            [node.id for node in st.session_state["nodes"]],
-                        )
-                        actual_node = next(
-                            (
-                                node
-                                for node in st.session_state["nodes"]
-                                if node_id == node.id
-                            ),
-                            None,
-                        )
-                        index = list.index(actual_node.shape)
+                elif selected == "Editar Nodo"and st.session_state["graph"]:
+                    node_id = st.selectbox(
+                        "Seleccione nodo: ",
+                        [node.id for node in st.session_state["nodes"]],
+                    )
+                    actual_node = next(
+                        (
+                            node
+                            for node in st.session_state["nodes"]
+                            if node_id == node.id
+                        ),
+                        None,
+                    )
+                    index = list.index(actual_node.shape)
 
                 # Campo de texto para introducir el nombre del nodo
                 node_name = st.text_input(
@@ -219,6 +222,7 @@ class Utils:
 
                         st.session_state["nodes"].append(new_node)
                         st.session_state["last_action"] = "New Node"
+                        self.posicionate()
 
                 elif selected == "Editar Nodo":
                     if st.button("Cambiar Nodo"):
@@ -234,6 +238,7 @@ class Utils:
                         st.session_state["nodes"][index].shape = node_shape
 
                         st.session_state["last_action"] = "Edit Node"
+                        self.posicionate()
 
     def export_to_image(self):
         # Definir las coordenadas del área de la captura de pantalla
@@ -374,6 +379,7 @@ class Utils:
                                 st.session_state["edges"]
                             )
                             st.session_state["edges"].append(new_edge)
+                            self.posicionate()
 
                         else:
                             new_edge_1 = Edge(
@@ -394,6 +400,7 @@ class Utils:
                             )
                             st.session_state["edges"].append(new_edge_1)
                             st.session_state["edges"].append(new_edge_2)
+                            self.posicionate()
 
                     st.session_state["last_action"] = "New Edge"
 
@@ -445,6 +452,7 @@ class Utils:
                     st.session_state["edges"][index].color = edge_color
                     st.session_state["edges"][index_2].label = edge_label
                     st.session_state["edges"][index_2].color = edge_color
+                self.posicionate()
 
                 st.session_state["last_action"] = "Edit Edge"
 
@@ -495,6 +503,7 @@ class Utils:
                 if actual_edge_2:
                     st.session_state["edges"].remove(actual_edge_2)
                 st.session_state["last_action"] = "Delete Edge"
+                self.posicionate()
                 
     def generate_graph_random(self):
         # Crear un expander para el grafo en la barra lateral
@@ -543,7 +552,7 @@ class Utils:
                             directed=st.session_state["directed"],
                         )
 
-                    pos = nx.circular_layout(G)
+                    #pos = nx.circular_layout(G)
                     # Convertir el grafo de networkx a formato agraph
                     nodes = [
                         Node(
@@ -553,7 +562,7 @@ class Utils:
                             shape=self.generateShape(),
                             size=15,
                             font={'color': "#FFFFFF"},
-                            x= pos[n][0] * 500, y = pos[n][1] * 500
+                            #x= pos[n][0] * 500, y = pos[n][1] * 500
                         )
                         for n in G.nodes()
                     ]
@@ -645,6 +654,7 @@ class Utils:
 
                     st.session_state["graph"] = True
                     st.session_state["last_action"] = "New Node"
+                    self.posicionate()
 
     def generate_table_data(self):
         # Crear un DataFrame con los datos de los nodos
@@ -677,3 +687,36 @@ class Utils:
         col1.dataframe(nodes_df, 600, 500)
         col2.markdown("<span id='dataframes'>Aristas</span>", unsafe_allow_html=True)
         col2.dataframe(edges_df, 600, 500)
+
+    def analyze_graph(self, nodes, edges):
+        is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
+        components = st.session_state["G"].find_connected_components(nodes, edges)
+
+        st.write("El grafo es bipartito: ", is_bipartite)
+        st.write("Componentes conectados:")
+        for i, component in enumerate(components):
+            st.write(f"Componente {i + 1}: {component}")
+        
+        return is_bipartite, components
+    
+    def posicionate(self):
+        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+
+        # Convertimos el gráfico a un objeto NetworkX
+        g = nx.Graph()
+
+        # Agregamos los nodos al grafo NetworkX
+        for node in st.session_state["nodes"]:
+            g.add_node(node.id)
+
+        # Agregamos las conexiones al grafo NetworkX
+        for edge in st.session_state["edges"]:
+            g.add_edge(edge.source, edge.to)
+
+        if is_bipartite:
+            pos = nx.bipartite_layout(g, components[0])
+        else:
+            pos = nx.circular_layout(g)
+        
+        for node in st.session_state["nodes"]:
+                node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
