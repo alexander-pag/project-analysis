@@ -27,6 +27,7 @@ default_session_state = {
     "copy_nodes": [],
     "edges": [],
     "copy_edges": [],
+    "deleted_edges": [],
     "directed": False,
     "weighted": False,
     "conex": False,
@@ -96,12 +97,20 @@ if option == "Herramientas":
 
 if option == "Ejecutar":
     st.session_state["window"] = True
-    st.write(
-        """
-        # Ejecutar
-        - Opción no disponible por el momento.
-        """
-    )
+    selected = option_menu(
+            menu_title=None,
+            options=["Analizar Grafo", "Ejecutar Algoritmo", "Ejecutar Algoritmo", "Ejecutar Algoritmo"],
+            default_index=0,
+            icons=["envelope-open", "x-square"],
+            orientation="horizontal",
+            styles={},
+        )
+    
+    if selected == "Analizar Grafo":
+        U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], False)
+    
+    elif selected == "Ejecutar Algoritmo":
+        st.write("Función no disponible por el momento")
 
 if option == "Archivo":
     st.session_state["window"] = False
@@ -275,10 +284,15 @@ elif option == "Editar":
                 st.session_state["nodes"] = copy.deepcopy(
                     st.session_state["copy_nodes"]
                 )
+                U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)
+
             elif last_action in ["New Edge", "Delete Edge", "Edit Edge"]:
                 st.session_state["edges"] = copy.deepcopy(
                     st.session_state["copy_edges"]
                 )
+                U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)
+
+
 elif option == "Ventana":
     st.session_state["window"] = True
     U.generate_table_data()

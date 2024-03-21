@@ -374,6 +374,7 @@ class Utils:
                                 target=edge_end,
                                 label=edge_label,
                                 color=edge_color,
+                                dashes=False
                             )
                             st.session_state["copy_edges"] = copy.deepcopy(
                                 st.session_state["edges"]
@@ -387,6 +388,7 @@ class Utils:
                                 target=edge_end,
                                 label=edge_label,
                                 color=edge_color,
+                                dashes=False
                             )
 
                             new_edge_2 = Edge(
@@ -394,6 +396,7 @@ class Utils:
                                 target=edge_start,
                                 label=edge_label,
                                 color=edge_color,
+                                dashes=False
                             )
                             st.session_state["copy_edges"] = copy.deepcopy(
                                 st.session_state["edges"]
@@ -499,9 +502,13 @@ class Utils:
                 st.session_state["copy_edges"] = copy.deepcopy(
                     st.session_state["edges"]
                 )
-                st.session_state["edges"].remove(actual_edge)
+                index1 = st.session_state["edges"].index(actual_edge)
+                st.session_state["edges"][index1].width = 3
+                st.session_state["edges"][index1].dashes = True
                 if actual_edge_2:
-                    st.session_state["edges"].remove(actual_edge_2)
+                    index2 = st.session_state["edges"].index(actual_edge)
+                    st.session_state["edges"][index2].width = 3
+                    st.session_state["edges"][index2].dashes = True
                 st.session_state["last_action"] = "Delete Edge"
                 self.posicionate()
                 
@@ -583,6 +590,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
+                                    dashes=False
                                 )
                             )
 
@@ -601,6 +609,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
+                                    dashes=False
                                 )
                             )
                             edges.append(
@@ -610,6 +619,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
+                                    dashes=False
                                 )
                             )
 
@@ -624,6 +634,7 @@ class Utils:
                                     target=e[1],
                                     color=self.generateColor(),
                                     width=1,
+                                    dashes=False
                                 )
                             )
 
@@ -638,6 +649,7 @@ class Utils:
                                     target=e[1],
                                     color=self.generateColor(),
                                     width=1,
+                                    dashes=False
                                 )
                             )
                             edges.append(
@@ -646,6 +658,7 @@ class Utils:
                                     target=e[0],
                                     color=self.generateColor(),
                                     width=1,
+                                    dashes=False
                                 )
                             )
 
@@ -689,7 +702,11 @@ class Utils:
         col2.markdown("<span id='dataframes'>Aristas</span>", unsafe_allow_html=True)
         col2.dataframe(edges_df, 600, 500)
 
-    def analyze_graph(self, nodes, edges, b):
+    def analyze_graph(self, nodes, edges, b):   
+        # Filtro las aristas por la propiedad dashes para saber cuales no han sido eliminadas
+        # dashes == False => arista sin eliminar
+        # dashes == True => arista eliminada
+        edges = list(filter(lambda e: e.dashes == False, edges))       
         is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
         components = st.session_state["G"].find_connected_components(nodes, edges)
 
