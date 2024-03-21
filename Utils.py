@@ -130,6 +130,7 @@ class Utils:
                         label=(
                             str(linked_node["weight"]) if linked_node["weight"] else ""
                         ),
+                        dashes=False,
                     )
                     st.session_state["edges"].append(edge)
 
@@ -338,6 +339,7 @@ class Utils:
                 return [name, directed, weighted]
 
     def add_edge_to_graph(self, selected):
+        edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))  
         if selected == "Agregar Arista" and st.session_state["graph"]:
             # Crear un expander para la arista en la barra lateral
             with st.sidebar.expander("Arista"):
@@ -410,7 +412,7 @@ class Utils:
         elif selected == "Editar Arista" and st.session_state["graph"]:
             actual_source = st.sidebar.selectbox(
                 "Seleccione arista: ",
-                [(edge.source, edge.to) for edge in st.session_state["edges"]],
+                [(edge.source, edge.to) for edge in edges],
             )
             actual_edge_2 = None
             for edge in st.session_state["edges"]:
@@ -462,7 +464,7 @@ class Utils:
         elif selected == "Eliminar Arista" and st.session_state["graph"]:
             actual_source = st.sidebar.selectbox(
                 "Seleccione arista: ",
-                [(edge.source, edge.to) for edge in st.session_state["edges"]],
+                [(edge.source, edge.to) for edge in edges],
             )
 
             actual_edge_2 = None
@@ -506,7 +508,7 @@ class Utils:
                 st.session_state["edges"][index1].width = 3
                 st.session_state["edges"][index1].dashes = True
                 if actual_edge_2:
-                    index2 = st.session_state["edges"].index(actual_edge)
+                    index2 = st.session_state["edges"].index(actual_edge_2)
                     st.session_state["edges"][index2].width = 3
                     st.session_state["edges"][index2].dashes = True
                 st.session_state["last_action"] = "Delete Edge"
