@@ -129,7 +129,7 @@ class Graph:
             adj[edge.to].append(edge.source)
         return adj
 
-    def is_bipartite(self, node, color, visited, colors, adj, subset1, subset2):
+    def is_bipartite(self, node, color, visited, colors, adj):
         """
         Determina si el grafo es bipartito utilizando búsqueda en profundidad.
         Args:
@@ -138,20 +138,14 @@ class Graph:
             visited (dict): Diccionario de nodos visitados.
             colors (dict): Diccionario de colores de nodos.
             adj (dict): Lista de adyacencia.
-            subset1 (set): Conjunto para el primer subconjunto.
-            subset2 (set): Conjunto para el segundo subconjunto.
         Returns:
             bool: True si el grafo es bipartito, False en caso contrario.
         """
         visited[node] = True
         colors[node] = color
-        if color == 0:
-            subset1.add(node)
-        else:
-            subset2.add(node)
         for neighbor in adj[node]:
             if not visited[neighbor]:
-                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj, subset1, subset2):
+                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj):
                     return False
             elif colors[neighbor] == colors[node]:
                 return False
@@ -159,53 +153,65 @@ class Graph:
 
     def check_bipartite(self, nodes, edges):
         """
-        Verifica si el grafo es bipartito y devuelve los subconjuntos.
+        Verifica si el grafo es bipartito.
         Args:
             nodes (list): Lista de nodos.
             edges (list): Lista de aristas.
         Returns:
-            tuple: (bool, set, set). True si el grafo es bipartito, False en caso contrario. Conjuntos que representan los dos subconjuntos.
+            bool: True si el grafo es bipartito, False en caso contrario.
         """
         adj = self.create_adjacency_list(nodes, edges)
         visited = {node.id: False for node in nodes}
         colors = {node.id: -1 for node in nodes}
-        subset1, subset2 = set(), set()
         for node in nodes:
             if not visited[node.id]:
-                if not self.is_bipartite(node.id, 0, visited, colors, adj, subset1, subset2):
-                    return False, set(), set()
-        return True, subset1, subset2
-
-
+                if not self.is_bipartite(node.id, 0, visited, colors, adj):
+                    return False
+        return True
+    
     def find_connected_components(self, nodes, edges):
         """
-        Encuentra los componentes conectados en el grafo.
+        Encuentra los componentes conectados en el grafo y los representa como dos subconjuntos.
         Args:
             nodes (list): Lista de nodos.
             edges (list): Lista de aristas.
         Returns:
-            list: Lista de componentes conectados (cada componente es una lista de nodos).
+            list: Lista de componentes conectados representados como dos subconjuntos.
+                Cada componente tiene una tupla de dos listas (lista de nodos de color 0, lista de nodos de color 1).
         """
         adj = self.create_adjacency_list(nodes, edges)
         visited = {node.id: False for node in nodes}
         components = []
         for node in nodes:
             if not visited[node.id]:
-                components.append([])
-                self.is_connected(node.id, visited, components[-1], adj)
+                component_coloring = self.color_component(node.id, visited, adj)
+                components.append(component_coloring)
         return components
 
-    def is_connected(self, node, visited, component, adj):
+    def color_component(self, node, visited, adj):
         """
-        Determina si el grafo es conexo utilizando búsqueda en profundidad.
+        Colorea un componente conexo del grafo.
         Args:
             node (int): Nodo actual.
             visited (dict): Diccionario de nodos visitados.
-            component (list): Lista de nodos en el componente conectado actual.
             adj (dict): Lista de adyacencia.
+        Returns:
+            tuple: Tupla de dos listas (lista de nodos de color 0, lista de nodos de color 1).
         """
         visited[node] = True
-        component.append(node)
-        for neighbor in adj[node]:
-            if not visited[neighbor]:
-                self.is_connected(neighbor, visited, component, adj)
+        color_0_list = []
+        color_1_list = []
+        stack = [(node, 0)]  # Start with color 0
+        while stack:
+            node, color = stack.pop()
+            if color == 0:
+                color_0_list.append(node)
+            else:
+                color_1_list.append(node)
+            for neighbor in adj[node]:
+                if not visited[neighbor]:
+                    visited[neighbor] = True
+                    stack.append((neighbor, 1 - color))
+        return color_0_list, color_1_list
+
+

@@ -504,15 +504,26 @@ class Utils:
                 st.session_state["copy_edges"] = copy.deepcopy(
                     st.session_state["edges"]
                 )
+                st.session_state["edges"].remove(actual_edge)
+                if actual_edge_2:
+                    st.session_state["edges"].remove(actual_edge_2)
+                st.session_state["last_action"] = "Delete Edge"
+                self.posicionate()
+            '''
+            if st.sidebar.button("Eliminar"):
+                st.session_state["copy_edges"] = copy.deepcopy(
+                    st.session_state["edges"]
+                )
                 index1 = st.session_state["edges"].index(actual_edge)
-                st.session_state["edges"][index1].width = 3
+                st.session_state["edges"][index1].width = 5
                 st.session_state["edges"][index1].dashes = True
                 if actual_edge_2:
                     index2 = st.session_state["edges"].index(actual_edge_2)
-                    st.session_state["edges"][index2].width = 3
+                    st.session_state["edges"][index2].width = 5
                     st.session_state["edges"][index2].dashes = True
                 st.session_state["last_action"] = "Delete Edge"
                 self.posicionate()
+            '''
                 
     def generate_graph_random(self):
         # Crear un expander para el grafo en la barra lateral
@@ -695,7 +706,7 @@ class Utils:
                     "Peso": int(edge.label) if st.session_state["weighted"] else 0,
                     "Color": edge.color,
                 }
-                for edge in st.session_state["edges"]
+                for edge in list(filter(lambda e: e.dashes == False, st.session_state["edges"])) 
             ]
         )
         col1, col2 = st.columns(2)
@@ -713,7 +724,7 @@ class Utils:
         components = st.session_state["G"].find_connected_components(nodes, edges)
 
         if b:
-            st.write("El grafo es bipartito: ", is_bipartite[0])
+            st.write("El grafo es bipartito: ", is_bipartite)
             st.write("Componentes conectados:")
             for i, component in enumerate(components):
                 st.write(f"Componente {i + 1}: {component}")
@@ -725,25 +736,37 @@ class Utils:
         st.sidebar.write(is_bipartite)
 
         com = []
+        posnum = 0
         for c in components:
             if len(c) >  len(com):
                 com = c
 
-        # Convertimos el gráfico a un objeto NetworkX
-        g = nx.Graph()
+            # Convertimos el gráfico a un objeto NetworkX
+            g = nx.Graph()
 
-        # Agregamos los nodos al grafo NetworkX
-        for node in st.session_state["nodes"]:
-            g.add_node(node.id)
+            # Agregamos los nodos al grafo NetworkX
+            for node in st.session_state["nodes"]:
+                if node.id in c[0] or node.id in c[1]:
+                    g.add_node(node.id)
 
-        # Agregamos las conexiones al grafo NetworkX
-        for edge in st.session_state["edges"]:
-            g.add_edge(edge.source, edge.to)
+            # Agregamos las conexiones al grafo NetworkX
+            for edge in st.session_state["edges"]:
+                #edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))  
+                if (edge.source in c[0] or edge.source in c[1]) and (edge.to in c[0] or edge.to in c[1]):
+                    g.add_edge(edge.source, edge.to)
 
-        if is_bipartite[0]:
-            pos = nx.bipartite_layout(g, is_bipartite[1])
-        else:
-            pos = nx.circular_layout(g)
-        
-        for node in st.session_state["nodes"]:
-                node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
+            if is_bipartite:
+                pos = nx.bipartite_layout(g, c[0])
+
+                for node in st.session_state["nodes"]:
+                    if node.id in c[0] or node.id in c[1]:
+                        node.x, node.y = pos[node.id][0] * 100 + posnum, pos[node.id][1] * 300
+
+            else:
+                pos = nx.circular_layout(g)
+
+                for node in st.session_state["nodes"]:
+                    if node.id in c[0] or node.id in c[1]:
+                        node.x, node.y = pos[node.id][0] * 500 + posnum, pos[node.id][1] * 500
+                
+            posnum += 300
