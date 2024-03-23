@@ -81,6 +81,8 @@ class Utils:
                                 int(edge.label) if st.session_state["weighted"] else 0
                             ),
                             "color": edge.color,
+                            "width": edge.width,
+                            "dashes": edge.dashes,
                         }
                     )
 
@@ -127,10 +129,11 @@ class Utils:
                         source=node.id,
                         target=linked_node["node_id"],
                         color=linked_node["color"],
+                        width=linked_node["width"],
+                        dashes=linked_node["dashes"],
                         label=(
                             str(linked_node["weight"]) if linked_node["weight"] else ""
                         ),
-                        dashes=False,
                     )
                     st.session_state["edges"].append(edge)
 
@@ -715,25 +718,19 @@ class Utils:
         col2.markdown("<span id='dataframes'>Aristas</span>", unsafe_allow_html=True)
         col2.dataframe(edges_df, 600, 500)
 
-    def analyze_graph(self, nodes, edges, b):   
+    def analyze_graph(self, nodes, edges):   
         # Filtro las aristas por la propiedad dashes para saber cuales no han sido eliminadas
         # dashes == False => arista sin eliminar
         # dashes == True => arista eliminada
         edges = list(filter(lambda e: e.dashes == False, edges))       
         is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
         components = st.session_state["G"].find_connected_components(nodes, edges)
-
-        if b:
-            st.write("El grafo es bipartito: ", is_bipartite)
-            st.write("Componentes conectados:")
-            for i, component in enumerate(components):
-                st.write(f"Componente {i + 1}: {component}")
         
         return is_bipartite, components
     
     def posicionate(self):
-        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"], False)
-        st.sidebar.write(is_bipartite)
+        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+        # st.sidebar.write(is_bipartite)
 
         com = []
         posnum = 0

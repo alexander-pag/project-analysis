@@ -107,8 +107,20 @@ if option == "Ejecutar":
         )
     
     if selected == "Analizar Grafo":
-        U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], False)
-    
+        is_bipartite, components = U.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+        type = "Conexo" if components == 1 else "Disconexo" 
+        if is_bipartite and type == "Conexo":
+            st.write("El grafo es bipartito y conexo")
+        elif is_bipartite and type == "Disconexo":
+            st.write("El grafo es bipartito y disconexo")
+        elif not is_bipartite and type == "Conexo":
+            st.write("El grafo no es bipartito y es conexo")
+        else:
+            st.write("El grafo no es bipartito y es disconexo")
+        st.write("Componentes conectados:")
+        for i, component in enumerate(components):
+            st.write(f"Componente {i + 1}: {component}")
+
     elif selected == "Ejecutar Algoritmo":
         st.write("Función no disponible por el momento")
 
@@ -284,14 +296,10 @@ elif option == "Editar":
                 st.session_state["nodes"] = copy.deepcopy(
                     st.session_state["copy_nodes"]
                 )
-                U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)
-
             elif last_action in ["New Edge", "Delete Edge", "Edit Edge"]:
                 st.session_state["edges"] = copy.deepcopy(
                     st.session_state["copy_edges"]
                 )
-                U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)
-
 
 elif option == "Ventana":
     st.session_state["window"] = True
@@ -311,6 +319,3 @@ if not st.session_state["window"]:
     return_value = agraph(
         nodes=st.session_state["nodes"], edges=st.session_state["edges"], config=config
     )
-
-if st.session_state["graph"]:
-    U.analyze_graph(st.session_state["nodes"], st.session_state["edges"], True)

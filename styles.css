@@ -25,4 +25,5 @@ span {
 
 [data-testid="stMarkdownContainer"] > p {
   color: #fff;
+  font-size: large;
 }
