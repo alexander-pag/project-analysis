@@ -107,8 +107,10 @@ if option == "Ejecutar":
         )
     
     if selected == "Analizar Grafo":
+        st.session_state["window"] = False
         is_bipartite, components = U.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
-        type = "Conexo" if components == 1 else "Disconexo" 
+        type = "Conexo" if len(components) == 1 else "Disconexo"
+        st.write("# Análisis de Grafo Bipartito")
         if is_bipartite and type == "Conexo":
             st.write("El grafo es bipartito y conexo")
         elif is_bipartite and type == "Disconexo":
@@ -252,6 +254,9 @@ elif option == "Editar":
         styles={},
     )
 
+    if not (st.session_state["graph"]):
+        st.sidebar.warning("No se ha creado un grafo para editar.")
+
     if selected == "Nodo":
         selected = option_menu(
             menu_title=None,
@@ -292,7 +297,14 @@ elif option == "Editar":
         # Deshacer el último cambio en los nodos o las aristas
         last_action = st.session_state.get("last_action")
         if last_action:
-            if last_action in ["New Node", "Delete Node", "Edit Node"]:
+            if last_action in ["New Node", "Edit Node"]:
+                st.session_state["nodes"] = copy.deepcopy(
+                    st.session_state["copy_nodes"]
+                )
+            elif last_action in ["Delete Node"]:
+                st.session_state["edges"] = copy.deepcopy(
+                    st.session_state["copy_edges"]
+                )
                 st.session_state["nodes"] = copy.deepcopy(
                     st.session_state["copy_nodes"]
                 )
@@ -300,6 +312,7 @@ elif option == "Editar":
                 st.session_state["edges"] = copy.deepcopy(
                     st.session_state["copy_edges"]
                 )
+        U.posicionate()
 
 elif option == "Ventana":
     st.session_state["window"] = True

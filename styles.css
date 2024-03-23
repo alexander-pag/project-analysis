@@ -18,10 +18,7 @@
   color: #435585;
 }
 
-ul,
-span {
-  color: #000;
-}
+
 
 [data-testid="stMarkdownContainer"] > p {
   color: #fff;

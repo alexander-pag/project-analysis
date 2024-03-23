@@ -157,12 +157,19 @@ class Utils:
                     st.session_state["nodes"]
                 )
 
+                st.session_state["copy_edges"] = copy.deepcopy(
+                    st.session_state["edges"]
+                )
+
                 st.session_state["nodes"].remove(actual_node)
+
+                edges_to_remove = [edge for edge in st.session_state["edges"] if edge.source == actual_node.id or edge.to == actual_node.id]
+                st.session_state["edges"] = [edge for edge in st.session_state["edges"] if edge not in edges_to_remove]
 
                 st.session_state["last_action"] = "Delete Node"
                 self.posicionate()
 
-        elif selected == "Agregar Nodo" or selected == "Editar Nodo":
+        elif (selected == "Agregar Nodo" or selected == "Editar Nodo") and st.session_state["graph"]:
             with st.sidebar.expander("Nodo"):
                 # Campo de texto para introducir el ID del nodo
                 list = [
@@ -379,36 +386,37 @@ class Utils:
                                 target=edge_end,
                                 label=edge_label,
                                 color=edge_color,
-                                dashes=False
+                                dashes=False,
+                                width = 1
                             )
                             st.session_state["copy_edges"] = copy.deepcopy(
                                 st.session_state["edges"]
                             )
                             st.session_state["edges"].append(new_edge)
                             self.posicionate()
-
+                        
                         else:
-                            new_edge_1 = Edge(
-                                source=edge_start,
-                                target=edge_end,
-                                label=edge_label,
-                                color=edge_color,
-                                dashes=False
-                            )
+                            b = True
+                            for edge in st.session_state["edges"]:
+                                if (edge_start == edge.to and edge_end == edge.source) or (edge_start == edge.source and edge_end == edge.to):
+                                    b = False
+                            if b == False:
+                                st.warning("La arista ingresada ya se encuentra en el grafo.")
+                            else:
+                                new_edge_1 = Edge(
+                                    source=edge_start,
+                                    target=edge_end,
+                                    label=edge_label,
+                                    color=edge_color,
+                                    dashes=False,
+                                    width = 1
+                                )
 
-                            new_edge_2 = Edge(
-                                source=edge_end,
-                                target=edge_start,
-                                label=edge_label,
-                                color=edge_color,
-                                dashes=False
-                            )
-                            st.session_state["copy_edges"] = copy.deepcopy(
-                                st.session_state["edges"]
-                            )
-                            st.session_state["edges"].append(new_edge_1)
-                            st.session_state["edges"].append(new_edge_2)
-                            self.posicionate()
+                                st.session_state["copy_edges"] = copy.deepcopy(
+                                    st.session_state["edges"]
+                                )
+                                st.session_state["edges"].append(new_edge_1)
+                                self.posicionate()
 
                     st.session_state["last_action"] = "New Edge"
 
@@ -417,7 +425,6 @@ class Utils:
                 "Seleccione arista: ",
                 [(edge.source, edge.to) for edge in edges],
             )
-            actual_edge_2 = None
             for edge in st.session_state["edges"]:
                 if edge.source == actual_source[0] and edge.to == actual_source[1]:
                     actual_edge = edge
@@ -446,20 +453,8 @@ class Utils:
                     st.session_state["edges"][index].color = edge_color
 
                 else:
-                    actual_edge_2 = next(
-                        (
-                            edge
-                            for edge in st.session_state["edges"]
-                            if edge.source == actual_source[1]
-                            and edge.to == actual_source[0]
-                        ),
-                        None,
-                    )
-                    index_2 = st.session_state["edges"].index(actual_edge_2)
                     st.session_state["edges"][index].label = edge_label
                     st.session_state["edges"][index].color = edge_color
-                    st.session_state["edges"][index_2].label = edge_label
-                    st.session_state["edges"][index_2].color = edge_color
                 self.posicionate()
 
                 st.session_state["last_action"] = "Edit Edge"
@@ -734,6 +729,15 @@ class Utils:
 
         com = []
         posnum = 0
+        numNodos = len(st.session_state["nodes"])
+
+        if numNodos > 18:
+            aupos = 300 + (numNodos - 18) * 20
+            auposx = 100 + (numNodos - 18) * 10
+        else:
+            aupos = 300
+            auposx = 100
+
         for c in components:
             if len(c) >  len(com):
                 com = c
@@ -757,13 +761,22 @@ class Utils:
 
                 for node in st.session_state["nodes"]:
                     if node.id in c[0] or node.id in c[1]:
-                        node.x, node.y = pos[node.id][0] * 100 + posnum, pos[node.id][1] * 300
+                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
 
             else:
-                pos = nx.circular_layout(g)
+                g2 = nx.Graph()
+
+                for node in st.session_state["nodes"]:
+                        g2.add_node(node.id)
+
+                # Agregamos las conexiones al grafo NetworkX
+                for edge in st.session_state["edges"]:
+                        g2.add_edge(edge.source, edge.to)
+
+                pos = nx.circular_layout(g2)
 
                 for node in st.session_state["nodes"]:
                     if node.id in c[0] or node.id in c[1]:
-                        node.x, node.y = pos[node.id][0] * 500 + posnum, pos[node.id][1] * 500
+                        node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
                 
-            posnum += 300
+            posnum += 500

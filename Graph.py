@@ -41,25 +41,25 @@ class Graph:
             adj[edge.to].append(edge.source)
         return adj
 
-    def is_bipartite(self, node, color, visited, colors, adj):
+    def is_bipartite(self, node, conjunto, visitados, conjuntos, adj):
         """
         Determina si el grafo es bipartito utilizando búsqueda en profundidad.
         Args:
             node (int): Nodo actual.
-            color (int): Color del nodo actual (0 o 1).
-            visited (dict): Diccionario de nodos visitados.
-            colors (dict): Diccionario de colores de nodos.
+            conjunto (int): conjunto del nodo actual (0 o 1).
+            visitados (dict): Diccionario de nodos visitados.
+            conjuntos (dict): Diccionario de conjuntos de nodos.
             adj (dict): Lista de adyacencia.
         Returns:
             bool: True si el grafo es bipartito, False en caso contrario.
         """
-        visited[node] = True
-        colors[node] = color
-        for neighbor in adj[node]:
-            if not visited[neighbor]:
-                if not self.is_bipartite(neighbor, 1 - color, visited, colors, adj):
+        visitados[node] = True
+        conjuntos[node] = conjunto
+        for vec in adj[node]:
+            if not visitados[vec]:
+                if not self.is_bipartite(vec, 1 - conjunto, visitados, conjuntos, adj):
                     return False
-            elif colors[neighbor] == colors[node]:
+            elif conjuntos[vec] == conjuntos[node]:
                 return False
         return True
 
@@ -73,11 +73,11 @@ class Graph:
             bool: True si el grafo es bipartito, False en caso contrario.
         """
         adj = self.create_adjacency_list(nodes, edges)
-        visited = {node.id: False for node in nodes}
-        colors = {node.id: -1 for node in nodes}
+        visitados = {node.id: False for node in nodes}
+        conjuntos = {node.id: -1 for node in nodes}
         for node in nodes:
-            if not visited[node.id]:
-                if not self.is_bipartite(node.id, 0, visited, colors, adj):
+            if not visitados[node.id]:
+                if not self.is_bipartite(node.id, 0, visitados, conjuntos, adj):
                     return False
         return True
     
@@ -92,38 +92,39 @@ class Graph:
                 Cada componente tiene una tupla de dos listas (lista de nodos de color 0, lista de nodos de color 1).
         """
         adj = self.create_adjacency_list(nodes, edges)
-        visited = {node.id: False for node in nodes}
-        components = []
+        visitados = {node.id: False for node in nodes}
+        componente = []
         for node in nodes:
-            if not visited[node.id]:
-                component_coloring = self.color_component(node.id, visited, adj)
-                components.append(component_coloring)
-        return components
+            if not visitados[node.id]:
+                componenteConjuntos = self.componente(node.id, visitados, adj)
+                componente.append(componenteConjuntos)
+        return componente
 
-    def color_component(self, node, visited, adj):
+    def componente(self, node, visitados, adj):
         """
-        Colorea un componente conexo del grafo.
+        Separa las componentes en dos conjuntos
         Args:
             node (int): Nodo actual.
             visited (dict): Diccionario de nodos visitados.
             adj (dict): Lista de adyacencia.
         Returns:
-            tuple: Tupla de dos listas (lista de nodos de color 0, lista de nodos de color 1).
+            tuple: Tupla de dos listas (lista de nodos del conjunto 0, lista de nodos del conjunto 1).
         """
-        visited[node] = True
-        color_0_list = []
-        color_1_list = []
-        stack = [(node, 0)]  # Start with color 0
+        visitados[node] = True
+        conjunto1list = []
+        conjunto2list = []
+        stack = [(node, 0)]  
         while stack:
-            node, color = stack.pop()
-            if color == 0:
-                color_0_list.append(node)
+            node, conjunto = stack.pop()
+            if conjunto == 0:
+                conjunto1list.append(node)
             else:
-                color_1_list.append(node)
-            for neighbor in adj[node]:
-                if not visited[neighbor]:
-                    visited[neighbor] = True
-                    stack.append((neighbor, 1 - color))
-        return color_0_list, color_1_list
+                conjunto2list.append(node)
+            for vec in adj[node]:
+                if not visitados[vec]:
+                    visitados[vec] = True
+                    stack.append((vec, 1 - conjunto))
+        return conjunto1list, conjunto2list
+
 
 
