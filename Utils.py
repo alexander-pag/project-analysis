@@ -759,10 +759,18 @@ class Utils:
             if is_bipartite:
                 pos = nx.bipartite_layout(g, c[0])
 
-                for node in st.session_state["nodes"]:
-                    if node.id in c[0] or node.id in c[1]:
-                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
+                colorconjunto1 = self.generateColor()
+                colorconjunto2 = self.generateColor()
 
+                for node in st.session_state["nodes"]:
+                    if node.id in c[0]:
+                        node.color = colorconjunto1
+                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
+                    
+                    elif node.id in c[1]:
+                        node.color = colorconjunto2
+                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
+                        
             else:
                 g2 = nx.Graph()
 
