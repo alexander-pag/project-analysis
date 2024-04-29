@@ -49,6 +49,7 @@ class Utils:
         return css
 
     def generate_graph_json(self, nodes, edges):
+
         graph_data = {
             "graph": [
                 {
@@ -73,12 +74,14 @@ class Utils:
             linked_nodes = []
             # Añadir los nodos que tengan una arista con el nodo actual
             for edge in edges:
-                if int(edge.source) == node.id:
+                if int(edge.source) == int(node.id):
                     linked_nodes.append(
                         {
-                            "node_id": edge.to,
+                            "node_id": int(edge.to),
                             "weight": (
-                                int(edge.label) if st.session_state["weighted"] else 0
+                                float(edge.label)
+                                if st.session_state["weighted"]
+                                else 0.0
                             ),
                             "color": edge.color,
                             "width": edge.width,
@@ -87,7 +90,7 @@ class Utils:
                     )
 
             node_data = {
-                "id": node.id,
+                "id": int(node.id),
                 "label": node.label,
                 "color": node.color,
                 "shape": node.shape,
@@ -119,7 +122,7 @@ class Utils:
                     label=node_data["label"],
                     color=node_data["color"],
                     shape=node_data["shape"],
-                    font={'color': "#FFFFFF"},
+                    font={"color": "#FFFFFF"},
                     size=15,
                 )
                 st.session_state["nodes"].append(node)
@@ -163,13 +166,23 @@ class Utils:
 
                 st.session_state["nodes"].remove(actual_node)
 
-                edges_to_remove = [edge for edge in st.session_state["edges"] if edge.source == actual_node.id or edge.to == actual_node.id]
-                st.session_state["edges"] = [edge for edge in st.session_state["edges"] if edge not in edges_to_remove]
+                edges_to_remove = [
+                    edge
+                    for edge in st.session_state["edges"]
+                    if edge.source == actual_node.id or edge.to == actual_node.id
+                ]
+                st.session_state["edges"] = [
+                    edge
+                    for edge in st.session_state["edges"]
+                    if edge not in edges_to_remove
+                ]
 
                 st.session_state["last_action"] = "Delete Node"
                 self.posicionate()
 
-        elif (selected == "Agregar Nodo" or selected == "Editar Nodo") and st.session_state["graph"]:
+        elif (
+            selected == "Agregar Nodo" or selected == "Editar Nodo"
+        ) and st.session_state["graph"]:
             with st.sidebar.expander("Nodo"):
                 # Campo de texto para introducir el ID del nodo
                 list = [
@@ -179,13 +192,13 @@ class Utils:
                     "star",
                     "triangle",
                     "triangleDown",
-                    "hexagon"
+                    "hexagon",
                 ]
                 if selected == "Agregar Nodo" and st.session_state["graph"]:
                     node_id = st.text_input("ID del nodo")
                     actual_node = None
                     index = 0
-                elif selected == "Editar Nodo"and st.session_state["graph"]:
+                elif selected == "Editar Nodo" and st.session_state["graph"]:
                     node_id = st.selectbox(
                         "Seleccione nodo: ",
                         [node.id for node in st.session_state["nodes"]],
@@ -228,7 +241,7 @@ class Utils:
                             size=15,
                             shape=node_shape,
                             color=node_color,
-                            font={'color': "#FFFFFF"}
+                            font={"color": "#FFFFFF"},
                         )
 
                         st.session_state["nodes"].append(new_node)
@@ -349,7 +362,7 @@ class Utils:
                 return [name, directed, weighted]
 
     def add_edge_to_graph(self, selected):
-        edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))  
+        edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))
         if selected == "Agregar Arista" and st.session_state["graph"]:
             # Crear un expander para la arista en la barra lateral
             with st.sidebar.expander("Arista"):
@@ -387,21 +400,31 @@ class Utils:
                                 label=edge_label,
                                 color=edge_color,
                                 dashes=False,
-                                width = 1
+                                width=1,
                             )
                             st.session_state["copy_edges"] = copy.deepcopy(
                                 st.session_state["edges"]
                             )
                             st.session_state["edges"].append(new_edge)
+
+                            for edge in st.session_state["edges"]:
+                                st.write(edge.source, edge.to)
+
                             self.posicionate()
-                        
+
                         else:
                             b = True
                             for edge in st.session_state["edges"]:
-                                if (edge_start == edge.to and edge_end == edge.source) or (edge_start == edge.source and edge_end == edge.to):
+                                if (
+                                    edge_start == edge.to and edge_end == edge.source
+                                ) or (
+                                    edge_start == edge.source and edge_end == edge.to
+                                ):
                                     b = False
                             if b == False:
-                                st.warning("La arista ingresada ya se encuentra en el grafo.")
+                                st.warning(
+                                    "La arista ingresada ya se encuentra en el grafo."
+                                )
                             else:
                                 new_edge_1 = Edge(
                                     source=edge_start,
@@ -409,7 +432,7 @@ class Utils:
                                     label=edge_label,
                                     color=edge_color,
                                     dashes=False,
-                                    width = 1
+                                    width=1,
                                 )
 
                                 st.session_state["copy_edges"] = copy.deepcopy(
@@ -507,7 +530,7 @@ class Utils:
                     st.session_state["edges"].remove(actual_edge_2)
                 st.session_state["last_action"] = "Delete Edge"
                 self.posicionate()
-            '''
+            """
             if st.sidebar.button("Eliminar"):
                 st.session_state["copy_edges"] = copy.deepcopy(
                     st.session_state["edges"]
@@ -521,8 +544,8 @@ class Utils:
                     st.session_state["edges"][index2].dashes = True
                 st.session_state["last_action"] = "Delete Edge"
                 self.posicionate()
-            '''
-                
+            """
+
     def generate_graph_random(self):
         # Crear un expander para el grafo en la barra lateral
         with st.sidebar.expander("Grafo"):
@@ -570,7 +593,7 @@ class Utils:
                             directed=st.session_state["directed"],
                         )
 
-                    #pos = nx.circular_layout(G)
+                    # pos = nx.circular_layout(G)
                     # Convertir el grafo de networkx a formato agraph
                     nodes = [
                         Node(
@@ -579,9 +602,9 @@ class Utils:
                             color=self.generateColor(),
                             shape=self.generateShape(),
                             size=15,
-                            font={'color': "#FFFFFF"},
-                            physics = True
-                            #x= pos[n][0] * 500, y = pos[n][1] * 500
+                            font={"color": "#FFFFFF"},
+                            physics=True,
+                            # x= pos[n][0] * 500, y = pos[n][1] * 500
                         )
                         for n in G.nodes()
                     ]
@@ -601,7 +624,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
 
@@ -620,7 +643,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
                             edges.append(
@@ -630,7 +653,7 @@ class Utils:
                                     label=label,
                                     color=color,
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
 
@@ -645,7 +668,7 @@ class Utils:
                                     target=e[1],
                                     color=self.generateColor(),
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
 
@@ -660,7 +683,7 @@ class Utils:
                                     target=e[1],
                                     color=self.generateColor(),
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
                             edges.append(
@@ -669,7 +692,7 @@ class Utils:
                                     target=e[0],
                                     color=self.generateColor(),
                                     width=1,
-                                    dashes=False
+                                    dashes=False,
                                 )
                             )
 
@@ -704,7 +727,9 @@ class Utils:
                     "Peso": int(edge.label) if st.session_state["weighted"] else 0,
                     "Color": edge.color,
                 }
-                for edge in list(filter(lambda e: e.dashes == False, st.session_state["edges"])) 
+                for edge in list(
+                    filter(lambda e: e.dashes == False, st.session_state["edges"])
+                )
             ]
         )
         col1, col2 = st.columns(2)
@@ -713,18 +738,20 @@ class Utils:
         col2.markdown("<span id='dataframes'>Aristas</span>", unsafe_allow_html=True)
         col2.dataframe(edges_df, 600, 500)
 
-    def analyze_graph(self, nodes, edges):   
+    def analyze_graph(self, nodes, edges):
         # Filtro las aristas por la propiedad dashes para saber cuales no han sido eliminadas
         # dashes == False => arista sin eliminar
         # dashes == True => arista eliminada
-        edges = list(filter(lambda e: e.dashes == False, edges))       
+        edges = list(filter(lambda e: e.dashes == False, edges))
         is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
         components = st.session_state["G"].find_connected_components(nodes, edges)
-        
+
         return is_bipartite, components
-    
+
     def posicionate(self):
-        is_bipartite, components = self.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+        is_bipartite, components = self.analyze_graph(
+            st.session_state["nodes"], st.session_state["edges"]
+        )
         # st.sidebar.write(is_bipartite)
 
         com = []
@@ -739,7 +766,7 @@ class Utils:
             auposx = 100
 
         for c in components:
-            if len(c) >  len(com):
+            if len(c) > len(com):
                 com = c
 
             # Convertimos el gráfico a un objeto NetworkX
@@ -752,8 +779,10 @@ class Utils:
 
             # Agregamos las conexiones al grafo NetworkX
             for edge in st.session_state["edges"]:
-                #edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))  
-                if (edge.source in c[0] or edge.source in c[1]) and (edge.to in c[0] or edge.to in c[1]):
+                # edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))
+                if (edge.source in c[0] or edge.source in c[1]) and (
+                    edge.to in c[0] or edge.to in c[1]
+                ):
                     g.add_edge(edge.source, edge.to)
 
             if is_bipartite:
@@ -765,26 +794,32 @@ class Utils:
                 for node in st.session_state["nodes"]:
                     if node.id in c[0]:
                         node.color = colorconjunto1
-                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
-                    
+                        node.x, node.y = (
+                            pos[node.id][0] * 200 + posnum,
+                            pos[node.id][1] * aupos,
+                        )
+
                     elif node.id in c[1]:
                         node.color = colorconjunto2
-                        node.x, node.y = pos[node.id][0] * 200 + posnum, pos[node.id][1] * aupos
-                        
+                        node.x, node.y = (
+                            pos[node.id][0] * 200 + posnum,
+                            pos[node.id][1] * aupos,
+                        )
+
             else:
                 g2 = nx.Graph()
 
                 for node in st.session_state["nodes"]:
-                        g2.add_node(node.id)
+                    g2.add_node(node.id)
 
                 # Agregamos las conexiones al grafo NetworkX
                 for edge in st.session_state["edges"]:
-                        g2.add_edge(edge.source, edge.to)
+                    g2.add_edge(edge.source, edge.to)
 
                 pos = nx.circular_layout(g2)
 
                 for node in st.session_state["nodes"]:
                     if node.id in c[0] or node.id in c[1]:
                         node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
-                
+
             posnum += 500
