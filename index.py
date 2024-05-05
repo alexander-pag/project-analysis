@@ -6,6 +6,9 @@ from Utils import Utils
 import copy
 import pyautogui as pg
 from Graph import Graph
+import pandas as pd
+from itertools import product
+import matplotlib.pyplot as plt
 
 st.set_page_config(
     page_title="Graph Editor",
@@ -99,7 +102,7 @@ if option == "Ejecutar":
     st.session_state["window"] = True
     selected = option_menu(
             menu_title=None,
-            options=["Analizar Grafo", "Ejecutar Algoritmo", "Ejecutar Algoritmo", "Ejecutar Algoritmo"],
+            options=["Analizar Grafo", "Estrategia 1", "Ejecutar Algoritmo", "Ejecutar Algoritmo"],
             default_index=0,
             icons=["envelope-open", "x-square"],
             orientation="horizontal",
@@ -123,8 +126,80 @@ if option == "Ejecutar":
         for i, component in enumerate(components):
             st.write(f"Componente {i + 1}: {component}")
 
+    elif selected == "Estrategia 1":
+        subconjuntos = {
+            "A": {
+                (0, 0, 0, 0): 0, (1, 0, 0, 0): 0, (0, 1, 0, 0): 1, (1, 1, 0, 0): 1,
+                (0, 0, 1, 0): 1, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 1,
+                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 1, (1, 1, 0, 1): 1,
+                (0, 0, 1, 1): 1, (1, 0, 1, 1): 1, (0, 1, 1, 1): 1, (1, 1, 1, 1): 1
+
+            },
+            "B": {
+                (0, 0, 0, 0): 0, (1, 0, 0, 0): 0, (0, 1, 0, 0): 0, (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 0, (1, 1, 1, 0): 1,
+                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 0, (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0, (1, 0, 1, 1): 1, (0, 1, 1, 1): 0, (1, 1, 1, 1): 1
+            },
+            "C": {
+                (0, 0, 0, 0): 0, (1, 0, 0, 0): 1, (0, 1, 0, 0): 1, (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0, (1, 0, 0, 1): 1, (0, 1, 0, 1): 1, (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0, (1, 0, 1, 1): 1, (0, 1, 1, 1): 1, (1, 1, 1, 1): 0
+            },
+            "D": {
+                (0, 0, 0, 0): 0, (1, 0, 0, 0): 1, (0, 1, 0, 0): 1, (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 0, (1, 1, 0, 1): 1,
+                (0, 0, 1, 1): 1, (1, 0, 1, 1): 1, (0, 1, 1, 1): 0, (1, 1, 1, 1): 1
+            }
+
+        }
+        
+        resultado, listaNodos = U.generate_state_transitions(subconjuntos)
+        tablacomparativa = U.generarTablaDistribuida(resultado)
+        df = pd.DataFrame(tablacomparativa[1:], columns=tablacomparativa[0])
+        
+        cadena = ''.join(listaNodos)
+        st.write(f"## **P({cadena}$^t$ $^+$ $^1$ | {cadena}$^t$)**")
+        st.dataframe(df)
+        
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+        with col1:
+            optionep = st.multiselect('Estados presentes:', listaNodos)
+        with col2:
+             optionef = st.multiselect('Estados futuros:', listaNodos)
+        with col3:
+            combinaciones = list(product([0, 1], repeat=len(optionep)))
+            valorE = st.selectbox("Selecciona el valor presente: ", combinaciones)
+        with col4:
+           boton = st.button("Generar distribución")
+        
+        if boton:
+            optionep.sort()
+            optionef.sort()
+            cadena1 = ''.join(optionep)
+            cadena2 = ''.join(optionef)
+            st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {valorE})**")
+            distribucionProbabilidades = U.generarDistribucionProbabilidades(subconjuntos, optionep, optionef, valorE, listaNodos)
+            df = pd.DataFrame(distribucionProbabilidades[1:], columns=distribucionProbabilidades[0])
+            
+            st.dataframe(df)
+            
+            st.session_state["window"] = False
+            st.session_state["nodes"], st.session_state["edges"] = [], []
+            U.generarGrafoTablaDistribucion(listaNodos, st.session_state["nodes"], st.session_state["edges"])
+            
+            combinaciones_ep = U.generar_combinaciones(optionep, valorE)
+            combinaciones_ef = U.generar_combinaciones(optionef)
+
+
+            res = U.encontrar_distribuciones_combinaciones(
+                combinaciones_ep, combinaciones_ef, distribucionProbabilidades, subconjuntos, listaNodos
+            )
+
     elif selected == "Ejecutar Algoritmo":
-        st.write("Función no disponible por el momento")
+            st.write("Función no disponible por el momento")
 
 if option == "Archivo":
     st.session_state["window"] = False
