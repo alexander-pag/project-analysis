@@ -9,6 +9,7 @@ from Graph import Graph
 import pandas as pd
 from itertools import product
 import matplotlib.pyplot as plt
+import ast
 
 st.set_page_config(
     page_title="Graph Editor",
@@ -129,31 +130,35 @@ if option == "Ejecutar":
     elif selected == "Estrategia 1":
         subconjuntos = {
             "A": {
-                (0, 0, 0, 0): 0, (1, 0, 0, 0): 0, (0, 1, 0, 0): 1, (1, 1, 0, 0): 1,
-                (0, 0, 1, 0): 1, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 1,
-                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 1, (1, 1, 0, 1): 1,
-                (0, 0, 1, 1): 1, (1, 0, 1, 1): 1, (0, 1, 1, 1): 1, (1, 1, 1, 1): 1
-
+                (0, 0, 0): 1,
+                (1, 0, 0): 0,
+                (0, 1, 0): 0,
+                (1, 1, 0): 0,
+                (0, 0, 1): 0,
+                (1, 0, 1): 0,
+                (0, 1, 1): 0,
+                (1, 1, 1): 0,
             },
             "B": {
-                (0, 0, 0, 0): 0, (1, 0, 0, 0): 0, (0, 1, 0, 0): 0, (1, 1, 0, 0): 0,
-                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 0, (1, 1, 1, 0): 1,
-                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 0, (1, 1, 0, 1): 0,
-                (0, 0, 1, 1): 0, (1, 0, 1, 1): 1, (0, 1, 1, 1): 0, (1, 1, 1, 1): 1
+                (0, 0, 0): 0,
+                (1, 0, 0): 0,
+                (0, 1, 0): 0,
+                (1, 1, 0): 0,
+                (0, 0, 1): 0,
+                (1, 0, 1): 0,
+                (0, 1, 1): 1,
+                (1, 1, 1): 0,
             },
             "C": {
-                (0, 0, 0, 0): 0, (1, 0, 0, 0): 1, (0, 1, 0, 0): 1, (1, 1, 0, 0): 0,
-                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 0,
-                (0, 0, 0, 1): 0, (1, 0, 0, 1): 1, (0, 1, 0, 1): 1, (1, 1, 0, 1): 0,
-                (0, 0, 1, 1): 0, (1, 0, 1, 1): 1, (0, 1, 1, 1): 1, (1, 1, 1, 1): 0
+                (0, 0, 0): 0,
+                (1, 0, 0): 0,
+                (0, 1, 0): 0,
+                (1, 1, 0): 0,
+                (0, 0, 1): 0,
+                (1, 0, 1): 1,
+                (0, 1, 1): 0,
+                (1, 1, 1): 0,
             },
-            "D": {
-                (0, 0, 0, 0): 0, (1, 0, 0, 0): 1, (0, 1, 0, 0): 1, (1, 1, 0, 0): 0,
-                (0, 0, 1, 0): 0, (1, 0, 1, 0): 1, (0, 1, 1, 0): 1, (1, 1, 1, 0): 0,
-                (0, 0, 0, 1): 0, (1, 0, 0, 1): 0, (0, 1, 0, 1): 0, (1, 1, 0, 1): 1,
-                (0, 0, 1, 1): 1, (1, 0, 1, 1): 1, (0, 1, 1, 1): 0, (1, 1, 1, 1): 1
-            }
-
         }
         
         resultado, listaNodos = U.generate_state_transitions(subconjuntos)
@@ -193,10 +198,34 @@ if option == "Ejecutar":
             combinaciones_ep = U.generar_combinaciones(optionep, valorE)
             combinaciones_ef = U.generar_combinaciones(optionef)
 
-
-            res = U.encontrar_distribuciones_combinaciones(
-                combinaciones_ep, combinaciones_ef, distribucionProbabilidades, subconjuntos, listaNodos
-            )
+            res = U.encontrar_distribuciones_combinaciones(combinaciones_ep, combinaciones_ef, distribucionProbabilidades, subconjuntos, listaNodos)
+            
+            df0 = pd.DataFrame(res[0][1:], columns=res[0][0])
+            df1 = pd.DataFrame(res[1][1:], columns=res[1][0])
+            
+            col1, col2 = st.columns(2)  
+            
+            with col1:
+                partes = res[1][0][0].split('\\')
+                lista1 = ast.literal_eval(partes[0].strip())
+                lista2 = ast.literal_eval(partes[1].strip())
+                
+                cadena1 = ''.join(lista1)
+                cadena2 = ''.join(lista2)
+                
+                st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[1][1][0]})**")
+                st.dataframe(df1)
+            with col2:
+                partes = res[0][0][0].split('\\')
+                lista1 = ast.literal_eval(partes[0].strip())
+                lista2 = ast.literal_eval(partes[1].strip())
+                
+                cadena1 = ''.join(lista1)
+                cadena2 = ''.join(lista2)
+                st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[0][1][0]})**")
+                st.dataframe(df0)
+            
+            U.marcarAristas(lista1, lista2)
 
     elif selected == "Ejecutar Algoritmo":
             st.write("Función no disponible por el momento")
