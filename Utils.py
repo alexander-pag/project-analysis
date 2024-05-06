@@ -1002,9 +1002,7 @@ class Utils:
             if min_emd == 0.0:
                 return best_partition
             else:
-                return best_partition or min_emd
-
-            res = []
+                res = []
 
             best_partition = generar_combinaciones_recursivas(combinacion_ep_index, combinacion_ef_index + 1)
             if best_partition:
@@ -1012,6 +1010,8 @@ class Utils:
 
             best_partition = generar_combinaciones_recursivas(combinacion_ep_index + 1, combinacion_ef_index)
             return best_partition
+            ##return best_partition or min_emd
+
 
         return generar_combinaciones_recursivas(0, 0)
 

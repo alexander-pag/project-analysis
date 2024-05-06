@@ -200,6 +200,7 @@ if option == "Ejecutar":
 
             res = U.encontrar_distribuciones_combinaciones(combinaciones_ep, combinaciones_ef, distribucionProbabilidades, subconjuntos, listaNodos)
             
+            st.write(f"{res}")
             df0 = pd.DataFrame(res[0][1:], columns=res[0][0])
             df1 = pd.DataFrame(res[1][1:], columns=res[1][0])
             
