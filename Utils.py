@@ -14,6 +14,7 @@ import numpy as np
 from scipy.stats import wasserstein_distance
 from tabulate import tabulate
 
+
 class Utils:
     def createRandomString(self):
         characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
@@ -753,31 +754,53 @@ class Utils:
 
     ## TALLER 3
     def generarGrafoTablaDistribucion(self, listaNodos, nodes, edges):
-        ##nodes, edges = [], []
-        ##print(nodes)
+        # nodes, edges = [], []
+        # print(nodes)
         num = 0
         ultimosNodos1, ultimosNodos2 = [], []
         for i in listaNodos:
-            new_node = Node( id=num, label= i, size=15, color= self.generateColor(), font={'color': "#FFFFFF"})
-            new_node2 = Node(id=num + 1, label= i + "'", size=15, color= self.generateColor(), font={'color': "#FFFFFF"})
+            new_node = Node(
+                id=num,
+                label=i,
+                size=15,
+                color=self.generateColor(),
+                font={"color": "#FFFFFF"},
+            )
+            new_node2 = Node(
+                id=num + 1,
+                label=i + "'",
+                size=15,
+                color=self.generateColor(),
+                font={"color": "#FFFFFF"},
+            )
 
             nodes.append(new_node)
             nodes.append(new_node2)
-            
+
             for last_node1 in ultimosNodos1:
-                new_edge1 = Edge(source=last_node1.id, target=new_node2.id, dashes=False, directed=True)
+                new_edge1 = Edge(
+                    source=last_node1.id,
+                    target=new_node2.id,
+                    dashes=False,
+                    directed=True,
+                )
                 edges.append(new_edge1)
-        
+
             for last_node2 in ultimosNodos2:
-                new_edge2 = Edge(target=last_node2.id, source=new_node.id, dashes=False, directed=True)
+                new_edge2 = Edge(
+                    target=last_node2.id,
+                    source=new_node.id,
+                    dashes=False,
+                    directed=True,
+                )
                 edges.append(new_edge2)
 
             ultimosNodos1.append(new_node)
             ultimosNodos2.append(new_node2)  # Actualizar el último new_node2
             num = num + 2
-        
+
         self.posicionate()
-    
+
     def generarDistribucionProbabilidades(self, tabla, ep, ef, num, estados):
         ep_index = [estados.index(i) for i in ep]
         probabilidadesDistribuidas = []
@@ -794,26 +817,46 @@ class Utils:
 
         return tabla
 
-
-    def generarTabla(self, distribucionProbabilidades, num, i=0, binario="", nuevo_valor=1):
+    def generarTabla(
+        self, distribucionProbabilidades, num, i=0, binario="", nuevo_valor=1
+    ):
         if i == len(distribucionProbabilidades):
             binario = "0" * (len(distribucionProbabilidades) - len(binario)) + binario
             nueva_tupla = tuple(int(bit) for bit in binario)
             return [[nueva_tupla], [nuevo_valor]]
         else:
-            tabla1 = self.generarTabla(distribucionProbabilidades, num, i + 1, binario + "0", nuevo_valor * distribucionProbabilidades[i][1][2],)
-            tabla2 = self.generarTabla(distribucionProbabilidades, num, i + 1, binario + "1", nuevo_valor * distribucionProbabilidades[i][1][1],)
+            tabla1 = self.generarTabla(
+                distribucionProbabilidades,
+                num,
+                i + 1,
+                binario + "0",
+                nuevo_valor * distribucionProbabilidades[i][1][2],
+            )
+            tabla2 = self.generarTabla(
+                distribucionProbabilidades,
+                num,
+                i + 1,
+                binario + "1",
+                nuevo_valor * distribucionProbabilidades[i][1][1],
+            )
             return [tabla1[0] + tabla2[0], tabla1[1] + tabla2[1]]
-
 
     def porcentajeDistribuido(self, tabla, posiciones, num):
         nueva_tabla = [tabla[0]]
-        tabla1 = [fila for fila in tabla if all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))]
+        tabla1 = [
+            fila
+            for fila in tabla
+            if all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
+        ]
 
         valores = [0, 0]
         for fila in tabla1:
-            valor1 = (fila[1] if isinstance(fila[1], int) else fila[1][0])  # Asegurar que sea un número
-            valor2 = (fila[2] if isinstance(fila[2], int) else fila[2][0])  # Asegurar que sea un número
+            valor1 = (
+                fila[1] if isinstance(fila[1], int) else fila[1][0]
+            )  # Asegurar que sea un número
+            valor2 = (
+                fila[2] if isinstance(fila[2], int) else fila[2][0]
+            )  # Asegurar que sea un número
             valores[0] += valor1
             valores[1] += valor2
 
@@ -823,7 +866,6 @@ class Utils:
         nueva_tabla.append(nueva_fila)
 
         return nueva_tabla
-
 
     def generarTablaDistribuida(self, diccionario):
         # Obtener todas las llaves únicas
@@ -839,14 +881,12 @@ class Utils:
 
         return matriz
 
-
     def generarTablaComparativa(self, diccionario):
         lista = [["Llave", (1,), (0,)]]
         for key, value in diccionario.items():
             lista.append([key, value, 1 - value])
 
         return lista
-
 
     def generate_state_transitions(self, subconjuntos):
         estados = list(subconjuntos.keys())
@@ -869,7 +909,6 @@ class Utils:
         helper(0)
         return transiciones, estados
 
-     
     def generar_combinaciones(self, elementos, valores=None, memo=None):
         if memo is None:
             memo = {}
@@ -920,14 +959,15 @@ class Utils:
         memo[key] = combinaciones
         return combinaciones
 
-
     def encontrar_mejor_particion(self, original_system, possible_divisions):
         min_emd = float("inf")
         best_partition = None
 
         ##st.write(f"{possible_divisions}")
         for partition in possible_divisions:
-            current_emd = self.calculate_emd(np.array(original_system[1][1:]), partition)
+            current_emd = self.calculate_emd(
+                np.array(original_system[1][1:]), partition
+            )
 
             if current_emd == 0.0:
                 return partition, current_emd
@@ -938,82 +978,79 @@ class Utils:
 
         return best_partition, min_emd
 
-    def encontrar_distribuciones_combinaciones(self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados):
+    def encontrar_distribuciones_combinaciones(
+        self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
+    ):
+        res = []
+        distribuciones_cache = {}
 
-        def generar_combinaciones_recursivas(combinacion_ep_index, combinacion_ef_index):
-            res = []
-            best_partition = None
-            min_emd = None
-            
-            if combinacion_ep_index >= len(combinaciones_ep) or combinacion_ef_index >= len(combinaciones_ef):
-                return best_partition
+        def generar_distribucion_cache(
+            subconjuntos, conjunto_a, conjunto_b, probabilidad, estados
+        ):
+            # Verificar si la distribución ya está en caché
+            key = (tuple(conjunto_a), tuple(conjunto_b))
+            if key in distribuciones_cache:
+                return distribuciones_cache[key]
 
-            combinacion_ep = combinaciones_ep[combinacion_ep_index]
-            combinacion_ef = combinaciones_ef[combinacion_ef_index]
-
-            if not (set(combinacion_ep[0]) & set(combinacion_ef[0])) and not (set(combinacion_ep[1]) & set(combinacion_ef[1])):
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[0],
-                        combinacion_ef[0],
-                        combinacion_ep[2],
-                        estados,
-                    )
-                )
-
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[1],
-                        combinacion_ef[1],
-                        combinacion_ep[3],
-                        estados,
-                    )
-                )
-
-            if not (set(combinacion_ep[0]) & set(combinacion_ef[1])) and not (set(combinacion_ep[1]) & set(combinacion_ef[0])):
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[0],
-                        combinacion_ef[1],
-                        combinacion_ep[2],
-                        estados,
-                    )
-                )
-
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[1],
-                        combinacion_ef[0],
-                        combinacion_ep[3],
-                        estados,
-                    )
-                )
-
-            possible_divisions = self.convertir_probabilidades_tuplas(res)
-
-            best_partition, min_emd = self.encontrar_mejor_particion(
-                original_system, possible_divisions
+            distribucion = self.generarDistribucionProbabilidades(
+                subconjuntos, conjunto_a, conjunto_b, probabilidad, estados
             )
+            distribuciones_cache[key] = distribucion
+            return distribucion
 
-            if min_emd == 0.0:
-                return best_partition
-            else:
-                res = []
+        for combinacion_ep in combinaciones_ep:
+            for combinacion_ef in combinaciones_ef:
+                # Si hay un elemento en común, no se puede hacer la combinación
+                if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
+                    combinacion_ep[1]
+                ) & set(combinacion_ef[1]):
+                    continue
 
-            best_partition = generar_combinaciones_recursivas(combinacion_ep_index, combinacion_ef_index + 1)
-            if best_partition:
-                return best_partition
+                if (not combinacion_ep[0] and not combinacion_ef[0]) or (
+                    not combinacion_ep[1] and not combinacion_ef[1]
+                ):
+                    continue
 
-            best_partition = generar_combinaciones_recursivas(combinacion_ep_index + 1, combinacion_ef_index)
-            return best_partition
-            ##return best_partition or min_emd
+                res.append(
+                    generar_distribucion_cache(
+                        subconjuntos,
+                        combinacion_ep[0],
+                        combinacion_ef[0],
+                        combinacion_ep[2],
+                        estados,
+                    )
+                )
+                res.append(
+                    generar_distribucion_cache(
+                        subconjuntos,
+                        combinacion_ep[1],
+                        combinacion_ef[1],
+                        combinacion_ep[3],
+                        estados,
+                    )
+                )
 
+                # Realizar la inversa de las combinaciones
+                res.append(
+                    generar_distribucion_cache(
+                        subconjuntos,
+                        combinacion_ep[1],
+                        combinacion_ef[0],
+                        combinacion_ep[3],
+                        estados,
+                    )
+                )
+                res.append(
+                    generar_distribucion_cache(
+                        subconjuntos,
+                        combinacion_ep[0],
+                        combinacion_ef[1],
+                        combinacion_ep[2],
+                        estados,
+                    )
+                )
 
-        return generar_combinaciones_recursivas(0, 0)
+        return res
 
     def calculate_emd(self, original_system, system_partition):
         ##st.write(system_partition)
@@ -1022,7 +1059,6 @@ class Utils:
         ).flatten()
 
         return wasserstein_distance(original_system, divided_system)
-
 
     def convertir_probabilidades_tuplas(self, datos):
         possible_divisions = []
@@ -1039,20 +1075,22 @@ class Utils:
             for i in range(0, len(possible_divisions), 2)
         ]
         return possible_divisions
-    
+
     def marcarAristas(self, lista1, lista2):
+        print("l1", lista1)
+        print(lista2)
         num = 0
         for i in st.session_state["edges"]:
             nodo1 = st.session_state["nodes"][i.source]
             nodo2 = st.session_state["nodes"][i.to]
-            
+
             if nodo1.label in lista1 and nodo2 not in lista2:
                 st.session_state["edges"][num].dashes = True
             if nodo2.label[0] in lista2 and nodo1.label not in lista1:
                 st.session_state["edges"][num].dashes = True
             num += 1
         return
-        
+
 
     def posicionate(self):
         is_bipartite, components = self.analyze_graph(

@@ -39,7 +39,7 @@ default_session_state = {
     "name_graph": "",
     "last_action": "a",
     "window": False,
-    "G": G
+    "G": G,
 }
 
 for key, value in default_session_state.items():
@@ -102,17 +102,24 @@ if option == "Herramientas":
 if option == "Ejecutar":
     st.session_state["window"] = True
     selected = option_menu(
-            menu_title=None,
-            options=["Analizar Grafo", "Estrategia 1", "Ejecutar Algoritmo", "Ejecutar Algoritmo"],
-            default_index=0,
-            icons=["envelope-open", "x-square"],
-            orientation="horizontal",
-            styles={},
-        )
-    
+        menu_title=None,
+        options=[
+            "Analizar Grafo",
+            "Estrategia 1",
+            "Ejecutar Algoritmo",
+            "Ejecutar Algoritmo",
+        ],
+        default_index=0,
+        icons=["envelope-open", "x-square"],
+        orientation="horizontal",
+        styles={},
+    )
+
     if selected == "Analizar Grafo":
         st.session_state["window"] = False
-        is_bipartite, components = U.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+        is_bipartite, components = U.analyze_graph(
+            st.session_state["nodes"], st.session_state["edges"]
+        )
         type = "Conexo" if len(components) == 1 else "Disconexo"
         st.write("# Análisis de Grafo Bipartito")
         if is_bipartite and type == "Conexo":
@@ -128,7 +135,7 @@ if option == "Ejecutar":
             st.write(f"Componente {i + 1}: {component}")
 
     elif selected == "Estrategia 1":
-        subconjuntos = {
+        Tres = {
             "A": {
                 (0, 0, 0): 1,
                 (1, 0, 0): 0,
@@ -160,76 +167,356 @@ if option == "Ejecutar":
                 (1, 1, 1): 0,
             },
         }
-        
-        resultado, listaNodos = U.generate_state_transitions(subconjuntos)
+
+        Cuatro = {
+            "A": {
+                (0, 0, 0, 0): 1,
+                (1, 0, 0, 0): 0,
+                (0, 1, 0, 0): 0,
+                (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0,
+                (1, 0, 1, 0): 0,
+                (0, 1, 1, 0): 0,
+                (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0,
+                (1, 0, 0, 1): 0,
+                (0, 1, 0, 1): 0,
+                (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0,
+                (1, 0, 1, 1): 0,
+                (0, 1, 1, 1): 0,
+                (1, 1, 1, 1): 0,
+            },
+            "B": {
+                (0, 0, 0, 0): 0,
+                (1, 0, 0, 0): 0,
+                (0, 1, 0, 0): 0,
+                (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0,
+                (1, 0, 1, 0): 0,
+                (0, 1, 1, 0): 1,
+                (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0,
+                (1, 0, 0, 1): 0,
+                (0, 1, 0, 1): 0,
+                (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0,
+                (1, 0, 1, 1): 0,
+                (0, 1, 1, 1): 0,
+                (1, 1, 1, 1): 0,
+            },
+            "C": {
+                (0, 0, 0, 0): 0,
+                (1, 0, 0, 0): 0,
+                (0, 1, 0, 0): 0,
+                (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0,
+                (1, 0, 1, 0): 0,
+                (0, 1, 1, 0): 0,
+                (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0,
+                (1, 0, 0, 1): 0,
+                (0, 1, 0, 1): 0,
+                (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0,
+                (1, 0, 1, 1): 0,
+                (0, 1, 1, 1): 1,
+                (1, 1, 1, 1): 0,
+            },
+            "D": {
+                (0, 0, 0, 0): 0,
+                (1, 0, 0, 0): 0,
+                (0, 1, 0, 0): 0,
+                (1, 1, 0, 0): 0,
+                (0, 0, 1, 0): 0,
+                (1, 0, 1, 0): 0,
+                (0, 1, 1, 0): 0,
+                (1, 1, 1, 0): 0,
+                (0, 0, 0, 1): 0,
+                (1, 0, 0, 1): 0,
+                (0, 1, 0, 1): 0,
+                (1, 1, 0, 1): 0,
+                (0, 0, 1, 1): 0,
+                (1, 0, 1, 1): 0,
+                (0, 1, 1, 1): 0,
+                (1, 1, 1, 1): 1,
+            },
+        }
+
+        Cinco = {
+            "A": {
+                (0, 0, 0, 0, 0): 1,
+                (1, 0, 0, 0, 0): 0,
+                (0, 1, 0, 0, 0): 0,
+                (1, 1, 0, 0, 0): 0,
+                (0, 0, 1, 0, 0): 0,
+                (1, 0, 1, 0, 0): 0,
+                (0, 1, 1, 0, 0): 0,
+                (1, 1, 1, 0, 0): 0,
+                (0, 0, 0, 1, 0): 0,
+                (1, 0, 0, 1, 0): 0,
+                (0, 1, 0, 1, 0): 0,
+                (1, 1, 0, 1, 0): 0,
+                (0, 0, 1, 1, 0): 0,
+                (1, 0, 1, 1, 0): 0,
+                (0, 1, 1, 1, 0): 0,
+                (1, 1, 1, 1, 0): 0,
+                (0, 0, 0, 0, 1): 0,
+                (1, 0, 0, 0, 1): 0,
+                (0, 1, 0, 0, 1): 0,
+                (1, 1, 0, 0, 1): 0,
+                (0, 0, 1, 0, 1): 0,
+                (1, 0, 1, 0, 1): 0,
+                (0, 1, 1, 0, 1): 0,
+                (1, 1, 1, 0, 1): 0,
+                (0, 0, 0, 1, 1): 0,
+                (1, 0, 0, 1, 1): 0,
+                (0, 1, 0, 1, 1): 0,
+                (1, 1, 0, 1, 1): 0,
+                (0, 0, 1, 1, 1): 0,
+                (1, 0, 1, 1, 1): 0,
+                (0, 1, 1, 1, 1): 0,
+                (1, 1, 1, 1, 1): 0,
+            },
+            "B": {
+                (0, 0, 0, 0, 0): 0,
+                (1, 0, 0, 0, 0): 0,
+                (0, 1, 0, 0, 0): 0,
+                (1, 1, 0, 0, 0): 0,
+                (0, 0, 1, 0, 0): 0,
+                (1, 0, 1, 0, 0): 0,
+                (0, 1, 1, 0, 0): 1,
+                (1, 1, 1, 0, 0): 0,
+                (0, 0, 0, 1, 0): 0,
+                (1, 0, 0, 1, 0): 0,
+                (0, 1, 0, 1, 0): 0,
+                (1, 1, 0, 1, 0): 0,
+                (0, 0, 1, 1, 0): 0,
+                (1, 0, 1, 1, 0): 0,
+                (0, 1, 1, 1, 0): 0,
+                (1, 1, 1, 1, 0): 0,
+                (0, 0, 0, 0, 1): 0,
+                (1, 0, 0, 0, 1): 0,
+                (0, 1, 0, 0, 1): 0,
+                (1, 1, 0, 0, 1): 0,
+                (0, 0, 1, 0, 1): 0,
+                (1, 0, 1, 0, 1): 0,
+                (0, 1, 1, 0, 1): 0,
+                (1, 1, 1, 0, 1): 0,
+                (0, 0, 0, 1, 1): 0,
+                (1, 0, 0, 1, 1): 0,
+                (0, 1, 0, 1, 1): 0,
+                (1, 1, 0, 1, 1): 0,
+                (0, 0, 1, 1, 1): 0,
+                (1, 0, 1, 1, 1): 0,
+                (0, 1, 1, 1, 1): 1,
+                (1, 1, 1, 1, 1): 0,
+            },
+            "C": {
+                (0, 0, 0, 0, 0): 0,
+                (1, 0, 0, 0, 0): 0,
+                (0, 1, 0, 0, 0): 0,
+                (1, 1, 0, 0, 0): 0,
+                (0, 0, 1, 0, 0): 0,
+                (1, 0, 1, 0, 0): 0,
+                (0, 1, 1, 0, 0): 0,
+                (1, 1, 1, 0, 0): 0,
+                (0, 0, 0, 1, 0): 0,
+                (1, 0, 0, 1, 0): 0,
+                (0, 1, 0, 1, 0): 0,
+                (1, 1, 0, 1, 0): 0,
+                (0, 0, 1, 1, 0): 0,
+                (1, 0, 1, 1, 0): 0,
+                (0, 1, 1, 1, 0): 1,
+                (1, 1, 1, 1, 0): 0,
+                (0, 0, 0, 0, 1): 0,
+                (1, 0, 0, 0, 1): 0,
+                (0, 1, 0, 0, 1): 0,
+                (1, 1, 0, 0, 1): 0,
+                (0, 0, 1, 0, 1): 0,
+                (1, 0, 1, 0, 1): 0,
+                (0, 1, 1, 0, 1): 0,
+                (1, 1, 1, 0, 1): 0,
+                (0, 0, 0, 1, 1): 0,
+                (1, 0, 0, 1, 1): 0,
+                (0, 1, 0, 1, 1): 0,
+                (1, 1, 0, 1, 1): 0,
+                (0, 0, 1, 1, 1): 0,
+                (1, 0, 1, 1, 1): 0,
+                (0, 1, 1, 1, 1): 0,
+                (1, 1, 1, 1, 1): 1,
+            },
+            "D": {
+                (0, 0, 0, 0, 0): 0,
+                (1, 0, 0, 0, 0): 0,
+                (0, 1, 0, 0, 0): 0,
+                (1, 1, 0, 0, 0): 0,
+                (0, 0, 1, 0, 0): 0,
+                (1, 0, 1, 0, 0): 0,
+                (0, 1, 1, 0, 0): 1,
+                (1, 1, 1, 0, 0): 0,
+                (0, 0, 0, 1, 0): 0,
+                (1, 0, 0, 1, 0): 0,
+                (0, 1, 0, 1, 0): 0,
+                (1, 1, 0, 1, 0): 0,
+                (0, 0, 1, 1, 0): 0,
+                (1, 0, 1, 1, 0): 0,
+                (0, 1, 1, 1, 0): 0,
+                (1, 1, 1, 1, 0): 0,
+                (0, 0, 0, 0, 1): 0,
+                (1, 0, 0, 0, 1): 0,
+                (0, 1, 0, 0, 1): 0,
+                (1, 1, 0, 0, 1): 0,
+                (0, 0, 1, 0, 1): 0,
+                (1, 0, 1, 0, 1): 0,
+                (0, 1, 1, 0, 1): 0,
+                (1, 1, 1, 0, 1): 0,
+                (0, 0, 0, 1, 1): 0,
+                (1, 0, 0, 1, 1): 0,
+                (0, 1, 0, 1, 1): 0,
+                (1, 1, 0, 1, 1): 0,
+                (0, 0, 1, 1, 1): 0,
+                (1, 0, 1, 1, 1): 0,
+                (0, 1, 1, 1, 1): 0,
+                (1, 1, 1, 1, 1): 0,
+            },
+            "E": {
+                (0, 0, 0, 0, 0): 0,
+                (1, 0, 0, 0, 0): 0,
+                (0, 1, 0, 0, 0): 0,
+                (1, 1, 0, 0, 0): 0,
+                (0, 0, 1, 0, 0): 0,
+                (1, 0, 1, 0, 0): 0,
+                (0, 1, 1, 0, 0): 0,
+                (1, 1, 1, 0, 0): 0,
+                (0, 0, 0, 1, 0): 0,
+                (1, 0, 0, 1, 0): 0,
+                (0, 1, 0, 1, 0): 0,
+                (1, 1, 0, 1, 0): 0,
+                (0, 0, 1, 1, 0): 0,
+                (1, 0, 1, 1, 0): 0,
+                (0, 1, 1, 1, 0): 0,
+                (1, 1, 1, 1, 0): 0,
+                (0, 0, 0, 0, 1): 0,
+                (1, 0, 0, 0, 1): 0,
+                (0, 1, 0, 0, 1): 0,
+                (1, 1, 0, 0, 1): 0,
+                (0, 0, 1, 0, 1): 1,
+                (1, 0, 1, 0, 1): 0,
+                (0, 1, 1, 0, 1): 0,
+                (1, 1, 1, 0, 1): 0,
+                (0, 0, 0, 1, 1): 0,
+                (1, 0, 0, 1, 1): 0,
+                (0, 1, 0, 1, 1): 0,
+                (1, 1, 0, 1, 1): 0,
+                (0, 0, 1, 1, 1): 0,
+                (1, 0, 1, 1, 1): 0,
+                (0, 1, 1, 1, 1): 0,
+                (1, 1, 1, 1, 1): 0,
+            },
+        }
+
+        # Función para obtener el subconjunto seleccionado
+        def obtener_subconjunto(selected_subconjunto):
+            if selected_subconjunto == "Tres":
+                return Tres
+            elif selected_subconjunto == "Cuatro":
+                return Cuatro
+            elif selected_subconjunto == "Cinco":
+                return Cinco
+
+        # Interfaz de usuario
+        selected_subconjunto = st.radio(
+            "Selecciona un subconjunto:", ["Tres", "Cuatro", "Cinco"]
+        )  # Agrega más opciones si es necesario
+
+        subconjunto_seleccionado = obtener_subconjunto(selected_subconjunto)
+
+        resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
         tablacomparativa = U.generarTablaDistribuida(resultado)
         df = pd.DataFrame(tablacomparativa[1:], columns=tablacomparativa[0])
-        
-        cadena = ''.join(listaNodos)
+
+        cadena = "".join(listaNodos)
         st.write(f"## **P({cadena}$^t$ $^+$ $^1$ | {cadena}$^t$)**")
         st.dataframe(df)
-        
+
         col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
         with col1:
-            optionep = st.multiselect('Estados presentes:', listaNodos)
+            optionep = st.multiselect("Estados presentes:", listaNodos)
         with col2:
-             optionef = st.multiselect('Estados futuros:', listaNodos)
+            optionef = st.multiselect("Estados futuros:", listaNodos)
         with col3:
             combinaciones = list(product([0, 1], repeat=len(optionep)))
             valorE = st.selectbox("Selecciona el valor presente: ", combinaciones)
         with col4:
-           boton = st.button("Generar distribución")
-        
+            boton = st.button("Generar distribución")
+
         if boton:
             optionep.sort()
             optionef.sort()
-            cadena1 = ''.join(optionep)
-            cadena2 = ''.join(optionef)
+            cadena1 = "".join(optionep)
+            cadena2 = "".join(optionef)
             st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {valorE})**")
-            distribucionProbabilidades = U.generarDistribucionProbabilidades(subconjuntos, optionep, optionef, valorE, listaNodos)
-            df = pd.DataFrame(distribucionProbabilidades[1:], columns=distribucionProbabilidades[0])
-            
+            distribucionProbabilidades = U.generarDistribucionProbabilidades(
+                subconjunto_seleccionado, optionep, optionef, valorE, listaNodos
+            )
+            df = pd.DataFrame(
+                distribucionProbabilidades[1:], columns=distribucionProbabilidades[0]
+            )
+
             st.dataframe(df)
-            
+
             st.session_state["window"] = False
             st.session_state["nodes"], st.session_state["edges"] = [], []
-            U.generarGrafoTablaDistribucion(listaNodos, st.session_state["nodes"], st.session_state["edges"])
-            
+            U.generarGrafoTablaDistribucion(
+                listaNodos, st.session_state["nodes"], st.session_state["edges"]
+            )
+
             combinaciones_ep = U.generar_combinaciones(optionep, valorE)
             combinaciones_ef = U.generar_combinaciones(optionef)
 
-            res = U.encontrar_distribuciones_combinaciones(combinaciones_ep, combinaciones_ef, distribucionProbabilidades, subconjuntos, listaNodos)
-            
+            res = U.encontrar_distribuciones_combinaciones(
+                combinaciones_ep,
+                combinaciones_ef,
+                distribucionProbabilidades,
+                subconjunto_seleccionado,
+                listaNodos,
+            )
+
             st.write(f"{res}")
             df0 = pd.DataFrame(res[0][1:], columns=res[0][0])
             df1 = pd.DataFrame(res[1][1:], columns=res[1][0])
-            
-            col1, col2 = st.columns(2)  
-            
+
+            col1, col2 = st.columns(2)
+
             with col1:
-                partes = res[1][0][0].split('\\')
+                partes = res[1][0][0].split("\\")
                 lista1 = ast.literal_eval(partes[0].strip())
                 lista2 = ast.literal_eval(partes[1].strip())
-                
-                cadena1 = ''.join(lista1)
-                cadena2 = ''.join(lista2)
-                
-                st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[1][1][0]})**")
+
+                cadena1 = "".join(lista1)
+                cadena2 = "".join(lista2)
+
+                st.write(
+                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[1][1][0]})**"
+                )
                 st.dataframe(df1)
             with col2:
-                partes = res[0][0][0].split('\\')
+                partes = res[0][0][0].split("\\")
                 lista1 = ast.literal_eval(partes[0].strip())
                 lista2 = ast.literal_eval(partes[1].strip())
-                
-                cadena1 = ''.join(lista1)
-                cadena2 = ''.join(lista2)
-                st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[0][1][0]})**")
+
+                cadena1 = "".join(lista1)
+                cadena2 = "".join(lista2)
+                st.write(
+                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[0][1][0]})**"
+                )
                 st.dataframe(df0)
-            
+
             U.marcarAristas(lista1, lista2)
 
     elif selected == "Ejecutar Algoritmo":
-            st.write("Función no disponible por el momento")
+        st.write("Función no disponible por el momento")
 
 if option == "Archivo":
     st.session_state["window"] = False
