@@ -138,19 +138,19 @@ if option == "Ejecutar":
         Tres = {
             "A": {
                 (0, 0, 0): 1,
-                (1, 0, 0): 0,
+                (1, 0, 0): 1,
                 (0, 1, 0): 0,
                 (1, 1, 0): 0,
                 (0, 0, 1): 0,
                 (1, 0, 1): 0,
                 (0, 1, 1): 0,
-                (1, 1, 1): 0,
+                (1, 1, 1): 1,
             },
             "B": {
                 (0, 0, 0): 0,
-                (1, 0, 0): 0,
+                (1, 0, 0): 1,
                 (0, 1, 0): 0,
-                (1, 1, 0): 0,
+                (1, 1, 0): 1,
                 (0, 0, 1): 0,
                 (1, 0, 1): 0,
                 (0, 1, 1): 1,
@@ -158,30 +158,30 @@ if option == "Ejecutar":
             },
             "C": {
                 (0, 0, 0): 0,
-                (1, 0, 0): 0,
+                (1, 0, 0): 1,
                 (0, 1, 0): 0,
                 (1, 1, 0): 0,
                 (0, 0, 1): 0,
                 (1, 0, 1): 1,
                 (0, 1, 1): 0,
-                (1, 1, 1): 0,
+                (1, 1, 1): 1,
             },
         }
 
         Cuatro = {
             "A": {
-                (0, 0, 0, 0): 1,
+                (0, 0, 0, 0): 0,
                 (1, 0, 0, 0): 0,
                 (0, 1, 0, 0): 0,
                 (1, 1, 0, 0): 0,
-                (0, 0, 1, 0): 0,
+                (0, 0, 1, 0): 1,
                 (1, 0, 1, 0): 0,
                 (0, 1, 1, 0): 0,
-                (1, 1, 1, 0): 0,
+                (1, 1, 1, 0): 1,
                 (0, 0, 0, 1): 0,
                 (1, 0, 0, 1): 0,
                 (0, 1, 0, 1): 0,
-                (1, 1, 0, 1): 0,
+                (1, 1, 0, 1): 1,
                 (0, 0, 1, 1): 0,
                 (1, 0, 1, 1): 0,
                 (0, 1, 1, 1): 0,
@@ -189,26 +189,26 @@ if option == "Ejecutar":
             },
             "B": {
                 (0, 0, 0, 0): 0,
-                (1, 0, 0, 0): 0,
+                (1, 0, 0, 0): 1,
                 (0, 1, 0, 0): 0,
                 (1, 1, 0, 0): 0,
                 (0, 0, 1, 0): 0,
                 (1, 0, 1, 0): 0,
-                (0, 1, 1, 0): 1,
+                (0, 1, 1, 0): 0,
                 (1, 1, 1, 0): 0,
                 (0, 0, 0, 1): 0,
-                (1, 0, 0, 1): 0,
+                (1, 0, 0, 1): 1,
                 (0, 1, 0, 1): 0,
                 (1, 1, 0, 1): 0,
                 (0, 0, 1, 1): 0,
-                (1, 0, 1, 1): 0,
+                (1, 0, 1, 1): 1,
                 (0, 1, 1, 1): 0,
                 (1, 1, 1, 1): 0,
             },
             "C": {
-                (0, 0, 0, 0): 0,
-                (1, 0, 0, 0): 0,
-                (0, 1, 0, 0): 0,
+                (0, 0, 0, 0): 1,
+                (1, 0, 0, 0): 1,
+                (0, 1, 0, 0): 1,
                 (1, 1, 0, 0): 0,
                 (0, 0, 1, 0): 0,
                 (1, 0, 1, 0): 0,
@@ -218,28 +218,28 @@ if option == "Ejecutar":
                 (1, 0, 0, 1): 0,
                 (0, 1, 0, 1): 0,
                 (1, 1, 0, 1): 0,
-                (0, 0, 1, 1): 0,
+                (0, 0, 1, 1): 1,
                 (1, 0, 1, 1): 0,
-                (0, 1, 1, 1): 1,
+                (0, 1, 1, 1): 0,
                 (1, 1, 1, 1): 0,
             },
             "D": {
                 (0, 0, 0, 0): 0,
-                (1, 0, 0, 0): 0,
+                (1, 0, 0, 0): 1,
                 (0, 1, 0, 0): 0,
                 (1, 1, 0, 0): 0,
                 (0, 0, 1, 0): 0,
                 (1, 0, 1, 0): 0,
                 (0, 1, 1, 0): 0,
-                (1, 1, 1, 0): 0,
+                (1, 1, 1, 0): 1,
                 (0, 0, 0, 1): 0,
                 (1, 0, 0, 1): 0,
-                (0, 1, 0, 1): 0,
+                (0, 1, 0, 1): 1,
                 (1, 1, 0, 1): 0,
-                (0, 0, 1, 1): 0,
-                (1, 0, 1, 1): 0,
+                (0, 0, 1, 1): 1,
+                (1, 0, 1, 1): 1,
                 (0, 1, 1, 1): 0,
-                (1, 1, 1, 1): 1,
+                (1, 1, 1, 1): 0,
             },
         }
 
@@ -483,14 +483,29 @@ if option == "Ejecutar":
                 listaNodos,
             )
 
-            st.write(f"{res}")
-            df0 = pd.DataFrame(res[0][1:], columns=res[0][0])
-            df1 = pd.DataFrame(res[1][1:], columns=res[1][0])
+            possible_divisions = U.convertir_probabilidades_tuplas(res)
+
+            # Inicializar el mínimo y la mejor partición
+            min_emd = float("inf")
+            best_partition = None
+
+            # Encontrar la mejor partición
+            best_partition, min_emd = U.encontrar_mejor_particion(
+                distribucionProbabilidades[1][1:], possible_divisions
+            )
+
+            # Mostrar el resultado
+            print("La mejor partición es:", best_partition, "\n")
+            print("Con un EMD de:", min_emd, "\n")
+
+            st.write(f"{best_partition}")
+            df0 = pd.DataFrame(best_partition[0][1:], columns=best_partition[0][0])
+            df1 = pd.DataFrame(best_partition[1][1:], columns=best_partition[1][0])
 
             col1, col2 = st.columns(2)
 
             with col1:
-                partes = res[1][0][0].split("\\")
+                partes = best_partition[1][0][0].split("\\")
                 lista1 = ast.literal_eval(partes[0].strip())
                 lista2 = ast.literal_eval(partes[1].strip())
 
@@ -498,22 +513,24 @@ if option == "Ejecutar":
                 cadena2 = "".join(lista2)
 
                 st.write(
-                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[1][1][0]})**"
+                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {best_partition[1][1][0]})**"
                 )
                 st.dataframe(df1)
+
+                # U.marcarAristas(lista1, lista2, optionep, optionef)
             with col2:
-                partes = res[0][0][0].split("\\")
+                partes = best_partition[0][0][0].split("\\")
                 lista1 = ast.literal_eval(partes[0].strip())
                 lista2 = ast.literal_eval(partes[1].strip())
 
                 cadena1 = "".join(lista1)
                 cadena2 = "".join(lista2)
                 st.write(
-                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {res[0][1][0]})**"
+                    f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {best_partition[0][1][0]})**"
                 )
                 st.dataframe(df0)
 
-            U.marcarAristas(lista1, lista2)
+            U.marcarAristas(lista1, lista2, optionep, optionef)
 
     elif selected == "Ejecutar Algoritmo":
         st.write("Función no disponible por el momento")

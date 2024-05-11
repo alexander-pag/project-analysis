@@ -965,9 +965,7 @@ class Utils:
 
         ##st.write(f"{possible_divisions}")
         for partition in possible_divisions:
-            current_emd = self.calculate_emd(
-                np.array(original_system[1][1:]), partition
-            )
+            current_emd = self.calculate_emd(np.array(original_system), partition)
 
             if current_emd == 0.0:
                 return partition, current_emd
@@ -982,22 +980,6 @@ class Utils:
         self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
     ):
         res = []
-        distribuciones_cache = {}
-
-        def generar_distribucion_cache(
-            subconjuntos, conjunto_a, conjunto_b, probabilidad, estados
-        ):
-            # Verificar si la distribución ya está en caché
-            key = (tuple(conjunto_a), tuple(conjunto_b))
-            if key in distribuciones_cache:
-                return distribuciones_cache[key]
-
-            distribucion = self.generarDistribucionProbabilidades(
-                subconjuntos, conjunto_a, conjunto_b, probabilidad, estados
-            )
-            distribuciones_cache[key] = distribucion
-            return distribucion
-
         for combinacion_ep in combinaciones_ep:
             for combinacion_ef in combinaciones_ef:
                 # Si hay un elemento en común, no se puede hacer la combinación
@@ -1006,13 +988,16 @@ class Utils:
                 ) & set(combinacion_ef[1]):
                     continue
 
-                if (not combinacion_ep[0] and not combinacion_ef[0]) or (
-                    not combinacion_ep[1] and not combinacion_ef[1]
+                if (
+                    len(combinacion_ep[0]) == 0
+                    and len(combinacion_ef[0]) == 0
+                    or len(combinacion_ep[1]) == 0
+                    and len(combinacion_ef[1]) == 0
                 ):
                     continue
 
                 res.append(
-                    generar_distribucion_cache(
+                    self.generarDistribucionProbabilidades(
                         subconjuntos,
                         combinacion_ep[0],
                         combinacion_ef[0],
@@ -1020,8 +1005,9 @@ class Utils:
                         estados,
                     )
                 )
+
                 res.append(
-                    generar_distribucion_cache(
+                    self.generarDistribucionProbabilidades(
                         subconjuntos,
                         combinacion_ep[1],
                         combinacion_ef[1],
@@ -1030,22 +1016,38 @@ class Utils:
                     )
                 )
 
-                # Realizar la inversa de las combinaciones
+        for combinacion_ep in combinaciones_ep:
+            for combinacion_ef in combinaciones_ef:
+                # Si hay un elemento en común, no se puede hacer la combinación
+                if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
+                    combinacion_ep[1]
+                ) & set(combinacion_ef[0]):
+                    continue
+
+                if (
+                    len(combinacion_ep[0]) == 0
+                    and len(combinacion_ef[1]) == 0
+                    or len(combinacion_ep[1]) == 0
+                    and len(combinacion_ef[0]) == 0
+                ):
+                    continue
+
                 res.append(
-                    generar_distribucion_cache(
-                        subconjuntos,
-                        combinacion_ep[1],
-                        combinacion_ef[0],
-                        combinacion_ep[3],
-                        estados,
-                    )
-                )
-                res.append(
-                    generar_distribucion_cache(
+                    self.generarDistribucionProbabilidades(
                         subconjuntos,
                         combinacion_ep[0],
                         combinacion_ef[1],
                         combinacion_ep[2],
+                        estados,
+                    )
+                )
+
+                res.append(
+                    self.generarDistribucionProbabilidades(
+                        subconjuntos,
+                        combinacion_ep[1],
+                        combinacion_ef[0],
+                        combinacion_ep[3],
                         estados,
                     )
                 )
@@ -1076,21 +1078,33 @@ class Utils:
         ]
         return possible_divisions
 
-    def marcarAristas(self, lista1, lista2):
-        print("l1", lista1)
-        print(lista2)
-        num = 0
-        for i in st.session_state["edges"]:
-            nodo1 = st.session_state["nodes"][i.source]
-            nodo2 = st.session_state["nodes"][i.to]
+    def marcarAristas(self, lista1, lista2, optionep, optionef):
+        edges = st.session_state["edges"]
+        nodes = st.session_state["nodes"]
 
-            if nodo1.label in lista1 and nodo2 not in lista2:
-                st.session_state["edges"][num].dashes = True
-            if nodo2.label[0] in lista2 and nodo1.label not in lista1:
-                st.session_state["edges"][num].dashes = True
-            num += 1
-        return
+        color1 = self.generateColor()
+        color2 = self.generateColor()
+        colore = self.generateColor()
 
+        aeliminar = []
+
+        for index, edge in enumerate(edges):
+            nodo1 = nodes[edge.source]
+            nodo2 = nodes[edge.to]
+
+            if nodo1.label in lista1:
+                edge.dashes = True
+                nodo1.color = color1
+            if nodo2.label[0] in lista2:
+                edge.dashes = True
+                nodo2.color = color1
+            # if nodo1.label in optionep or nodo2.label in optionef:
+            #     nodo1.color = colore
+            #     nodo2.color = colore
+            #     aeliminar.append(index)
+
+        # # Eliminar los elementos marcados para eliminar
+        # st.session_state["edges"] = [edge for index, edge in enumerate(edges) if index not in aeliminar]
 
     def posicionate(self):
         is_bipartite, components = self.analyze_graph(
