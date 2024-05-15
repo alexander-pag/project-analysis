@@ -10,6 +10,7 @@ from datetime import datetime
 import pandas as pd
 import networkx as nx
 from itertools import combinations
+import itertools
 import numpy as np
 from scipy.stats import wasserstein_distance
 from tabulate import tabulate
@@ -1078,33 +1079,48 @@ class Utils:
         ]
         return possible_divisions
 
-    def marcarAristas(self, lista1, lista2, optionep, optionef):
-        edges = st.session_state["edges"]
-        nodes = st.session_state["nodes"]
+    def marcarAristas(self, lista1, lista2, lista11, lista22, optionep, optionef):
+        # Añadir ' a lista2
+        lista2 = [i + "'" for i in lista2]
 
-        color1 = self.generateColor()
-        color2 = self.generateColor()
-        colore = self.generateColor()
+        edges_to_remove = []
+        for edge in st.session_state["edges"]:
+            source_node = st.session_state["nodes"][edge.source]
+            to_node = st.session_state["nodes"][edge.to]
 
-        aeliminar = []
+            source_node_color = (
+                "#00FFFF"
+                if source_node.label in lista1
+                else "#FF0000" if source_node.label in lista11 else "#FFFFFF"
+            )
+            to_node_color = (
+                "#00FFFF"
+                if to_node.label in lista2
+                else "#FF0000" if to_node.label[0] in lista22 else "#FFFFFF"
+            )
 
-        for index, edge in enumerate(edges):
-            nodo1 = nodes[edge.source]
-            nodo2 = nodes[edge.to]
+            source_node.color = source_node_color
+            to_node.color = to_node_color
 
-            if nodo1.label in lista1:
-                edge.dashes = True
-                nodo1.color = color1
-            if nodo2.label[0] in lista2:
-                edge.dashes = True
-                nodo2.color = color1
-            # if nodo1.label in optionep or nodo2.label in optionef:
-            #     nodo1.color = colore
-            #     nodo2.color = colore
-            #     aeliminar.append(index)
+            edge_color = (
+                "#00FFFF"
+                if (source_node.label in lista1 and to_node.label[0] not in lista22)
+                else (
+                    "#FFFFFF"
+                    if (source_node.label in lista1 and to_node.label[0] in lista22)
+                    or (source_node.label in lista11 and to_node.label in lista2)
+                    else "#FF0000"
+                )
+            )
+            edge.color = edge_color
+            edge.dashes = edge_color == "#FFFFFF"
 
-        # # Eliminar los elementos marcados para eliminar
-        # st.session_state["edges"] = [edge for index, edge in enumerate(edges) if index not in aeliminar]
+            if source_node.label not in optionep or to_node.label[0] not in optionef:
+                edges_to_remove.append(edge)
+
+        st.session_state["edges"] = [
+            edge for edge in st.session_state["edges"] if edge not in edges_to_remove
+        ]
 
     def posicionate(self):
         is_bipartite, components = self.analyze_graph(
@@ -1181,3 +1197,368 @@ class Utils:
                         node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
 
             posnum += 500
+
+    # Estrategia #2
+    def find_components(self, graph):
+        # Encontrar todas las componentes débilmente conectadas
+        components = list(nx.weakly_connected_components(graph))
+        return components
+
+    def add_empty_node(self, graph, component):
+        # Encontrar nodos de la parte bipartita 0 en la componente
+        bipartite_0_nodes = [
+            node for node in component if graph.nodes[node]["bipartite"] == 0
+        ]
+
+        # Si no hay nodos de bipartite=0, no es necesario añadir un nodo vacío
+        if len(bipartite_0_nodes) == 0:
+            return component
+
+        # Si hay nodos de bipartite=0 y solo queda uno en la componente, añadir un nodo vacío
+        if len(bipartite_0_nodes) == 1:
+            empty_node = ""
+            graph.add_node(empty_node, bipartite=0)
+            component.add(empty_node)
+
+        return component
+
+    def separate_bipartite_components(self, graph, component):
+        # Inicializar conjuntos de nodos de bipartite=0 y bipartite=1
+        bipartite_0_set = set()
+        bipartite_1_set = set()
+
+        # Separar la componente en conjuntos de nodos de bipartite=0 y bipartite=1
+        for node in component:
+            if graph.nodes[node]["bipartite"] == 0:
+                bipartite_0_set.add(node)
+            else:
+                bipartite_1_set.add(node)
+
+        # Si no hay nodos de bipartite=1 en la componente, agregar un nodo vacío
+        if not bipartite_1_set:
+            bipartite_1_set.add("")
+
+        # Remover el nodo vacío del conjunto de bipartite=0 si existe
+        bipartite_0_set.discard("")
+
+        return bipartite_0_set, bipartite_1_set
+
+    def remove_edges_and_check_components(
+        self, graph, state_values, subconjunto_seleccionado, listaNodos
+    ):
+        # Crear una copia del grafo original
+        graph_copy = graph.copy()
+
+        # Inicializar la lista de aristas eliminadas
+        removed_edges = []
+
+        # Obtener nodos de bipartite=0
+        bipartite_0_nodes = [
+            node for node, attr in graph.nodes(data=True) if attr["bipartite"] == 0
+        ]
+
+        # Recorrer los nodos de bipartite=0
+        for node in bipartite_0_nodes:
+            # Obtener las aristas del nodo
+            node_edges = list(graph.edges(node))
+            for edge in node_edges:
+                # Eliminar una arista
+                graph_temp = graph_copy.copy()
+                graph_temp.remove_edge(*edge)
+
+                # Verificar si se generan dos componentes
+                if nx.number_weakly_connected_components(graph_temp) == 2:
+                    # Llamar a la función para encontrar todas las componentes
+                    components = self.find_components(graph_temp)
+                    for component in components:
+                        # Añadir nodo vacío si es necesario
+                        component_with_empty_node = self.add_empty_node(
+                            graph_temp, component
+                        )
+                        print("After removing edge", edge)
+                        print("Component:", component_with_empty_node)
+                        # Separar la componente en conjuntos de bipartite=0 y bipartite=1
+                        bipartite_0_set, bipartite_1_set = (
+                            self.separate_bipartite_components(
+                                graph_temp, component_with_empty_node
+                            )
+                        )
+
+                        # Filtrar nodos vacíos
+                        bipartite_0_set = {
+                            node for node in bipartite_0_set if node != ""
+                        }
+                        bipartite_1_set = {
+                            node for node in bipartite_1_set if node != ""
+                        }
+
+                        # Obtener valores de los estados presentes para bipartite=0
+                        bipartite_0_values = tuple(
+                            state_values[bipartite_0_nodes.index(node)]
+                            for node in bipartite_0_set
+                        )
+
+                        # Llamar a la función para calcular la tabla de distribución
+
+                        # Convertir bipartite_0_set a lista
+                        bipartite_0_list = list(bipartite_0_set)
+
+                        # Eliminar ' de los nodos de bipartite=1
+                        bipartite_1_list = [node[:-1] for node in bipartite_1_set]
+
+                        print(
+                            "Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values
+                        )
+                        print("Bipartite=1 nodes:", bipartite_1_list)
+
+                        distribucionProbabilidades = (
+                            self.generarDistribucionProbabilidades(
+                                subconjunto_seleccionado,
+                                bipartite_0_list,
+                                bipartite_1_list,
+                                bipartite_0_values,
+                                listaNodos,
+                            )
+                        )
+
+                        print("\n", distribucionProbabilidades)
+
+                        # Calcular el producto tensor y su emd
+
+                        # --------------------------- Tu código va aquí ---------------------------
+
+                        # --------------------------- Hasta aquí ---------------------------
+
+                    break  # Detener el bucle si se encontraron dos componentes
+            else:
+                # Si no se generaron dos componentes, agregar la arista a removed_edges
+                removed_edges.append(node_edges[0])
+
+        # Si no se generaron dos componentes eliminando una arista por nodo, probar combinaciones de dos aristas
+        for combination in itertools.combinations(removed_edges, 2):
+            graph_temp = graph_copy.copy()
+            graph_temp.remove_edges_from(combination)
+            if nx.number_weakly_connected_components(graph_temp) == 2:
+                components = self.find_components(graph_temp)
+                for component in components:
+                    # Añadir nodo vacío si es necesario
+                    component_with_empty_node = self.add_empty_node(
+                        graph_temp, component
+                    )
+                    print("After removing edges", combination)
+                    print("Component:", component_with_empty_node)
+                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
+                    bipartite_0_set, bipartite_1_set = (
+                        self.separate_bipartite_components(
+                            graph_temp, component_with_empty_node
+                        )
+                    )
+
+                    # Filtrar nodos vacíos
+                    bipartite_0_set = {node for node in bipartite_0_set if node != ""}
+                    bipartite_1_set = {node for node in bipartite_1_set if node != ""}
+
+                    # Obtener valores de los estados presentes para bipartite=0
+                    bipartite_0_values = tuple(
+                        state_values[bipartite_0_nodes.index(node)]
+                        for node in bipartite_0_set
+                    )
+
+                    # Llamar a la función para calcular la tabla de distribución
+
+                    # Convertir bipartite_0_set a lista
+                    bipartite_0_list = list(bipartite_0_set)
+
+                    # Eliminar ' de los nodos de bipartite=1
+                    bipartite_1_list = [node[:-1] for node in bipartite_1_set]
+
+                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
+                    print("Bipartite=1 nodes:", bipartite_1_list)
+
+                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
+                        subconjunto_seleccionado,
+                        bipartite_0_list,
+                        bipartite_1_list,
+                        bipartite_0_values,
+                        listaNodos,
+                    )
+
+                    print("\n", distribucionProbabilidades)
+
+                    # Calcular el producto tensor y su emd
+
+                    # --------------------------- Tu código va aquí ---------------------------
+
+                    # --------------------------- Hasta aquí ---------------------------
+
+
+# Probar cuando hay nodos con 3 aristas
+"""
+import networkx as nx
+import itertools
+
+def find_components(graph):
+    # Encontrar todas las componentes débilmente conectadas
+    components = list(nx.weakly_connected_components(graph))
+    return components
+
+def add_empty_node(graph, component):
+    # Encontrar nodos de la parte bipartita 0 en la componente
+    bipartite_0_nodes = [node for node in component if graph.nodes[node]["bipartite"] == 0]
+    
+    # Si no hay nodos de bipartite=0, no es necesario añadir un nodo vacío
+    if len(bipartite_0_nodes) == 0:
+        return component
+    
+    # Si hay nodos de bipartite=0 y solo queda uno en la componente, añadir un nodo vacío
+    if len(bipartite_0_nodes) == 1:
+        empty_node = ""
+        graph.add_node(empty_node, bipartite=0)
+        component.add(empty_node)
+    
+    return component
+
+def separate_bipartite_components(graph, component):
+    # Inicializar conjuntos de nodos de bipartite=0 y bipartite=1
+    bipartite_0_set = set()
+    bipartite_1_set = set()
+
+    # Separar la componente en conjuntos de nodos de bipartite=0 y bipartite=1
+    for node in component:
+        if graph.nodes[node]["bipartite"] == 0:
+            bipartite_0_set.add(node)
+        else:
+            bipartite_1_set.add(node)
+
+    # Remover el nodo vacío del conjunto de bipartite=0 si existe
+    bipartite_0_set.discard("")
+
+    return bipartite_0_set, bipartite_1_set
+
+def remove_edges_and_check_components(graph, state_values, subconjunto_seleccionado, listaNodos):
+    # Crear una copia del grafo original
+    graph_copy = graph.copy()
+
+    # Inicializar la lista de aristas eliminadas
+    removed_edges = []
+
+    # Obtener nodos de bipartite=0
+    bipartite_0_nodes = [
+        node for node, attr in graph.nodes(data=True) if attr["bipartite"] == 0
+    ]
+
+    # Recorrer los nodos de bipartite=0
+    for node in bipartite_0_nodes:
+        # Obtener las aristas del nodo
+        node_edges = list(graph.edges(node))
+        for edge in node_edges:
+            # Eliminar una arista
+            graph_temp = graph_copy.copy()
+            graph_temp.remove_edge(*edge)
+
+            # Verificar si se generan dos componentes
+            if nx.number_weakly_connected_components(graph_temp) == 2:
+                # Llamar a la función para encontrar todas las componentes
+                components = find_components(graph_temp)
+                for component in components:
+                    # Añadir nodo vacío si es necesario
+                    component_with_empty_node = add_empty_node(
+                        graph_temp, component
+                    )
+                    print("After removing edge", edge)
+                    print("Component:", component_with_empty_node)
+                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
+                    bipartite_0_set, bipartite_1_set = separate_bipartite_components(
+                        graph_temp, component_with_empty_node
+                    )
+
+                    # Filtrar nodos vacíos
+                    bipartite_0_set = {node for node in bipartite_0_set if node != ''}
+                    bipartite_1_set = {node for node in bipartite_1_set if node != ''}
+
+                    # Obtener valores de los estados presentes para bipartite=0
+                    bipartite_0_values = tuple(
+                        state_values[bipartite_0_nodes.index(node)]
+                        for node in bipartite_0_set
+                    )
+
+                    # Llamar a la función para calcular la tabla de distribución
+
+                    # Convertir bipartite_0_set y bipartite_1_set a lista
+                    bipartite_0_list = list(bipartite_0_set)
+                    bipartite_1_list = list(bipartite_1_set)
+
+                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
+                    print("Bipartite=1 nodes:", bipartite_1_list)
+
+                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
+                        subconjunto_seleccionado,
+                        bipartite_0_list,
+                        bipartite_1_list,
+                        bipartite_0_values,
+                        listaNodos,
+                    )
+
+                    print(distribucionProbabilidades)
+
+            # Si no se generaron dos componentes, agregar la arista a removed_edges
+            else:
+                removed_edges.append(edge)
+
+    # Probar combinaciones incrementales de aristas
+    partition_found = False
+    for num_edges in range(2, len(removed_edges) + 1):
+        if partition_found:
+            break
+        for combination in itertools.combinations(removed_edges, num_edges):
+            graph_temp = graph_copy.copy()
+            graph_temp.remove_edges_from(combination)
+            if nx.number_weakly_connected_components(graph_temp) == 2:
+                partition_found = True
+                components = find_components(graph_temp)
+                for component in components:
+                    # Añadir nodo vacío si es necesario
+                    component_with_empty_node = add_empty_node(
+                        graph_temp, component
+                    )
+                    print("After removing edges", combination)
+                    print("Component:", component_with_empty_node)
+                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
+                    bipartite_0_set, bipartite_1_set = separate_bipartite_components(
+                        graph_temp, component_with_empty_node
+                    )
+
+                    # Filtrar nodos vacíos
+                    bipartite_0_set = {node for node in bipartite_0_set if node != ''}
+                    bipartite_1_set = {node for node in bipartite_1_set if node != ''}
+
+                    # Obtener valores de los estados presentes para bipartite=0
+                    bipartite_0_values = tuple(
+                        state_values[bipartite_0_nodes.index(node)]
+                        for node in bipartite_0_set
+                    )
+
+                    # Llamar a la función para calcular la tabla de distribución
+
+                    # Convertir bipartite_0_set y bipartite_1_set a lista
+                    bipartite_0_list = list(bipartite_0_set)
+                    bipartite_1_list = list(bipartite_1_set)
+
+                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
+                    print("Bipartite=1 nodes:", bipartite_1_list)
+
+                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
+                        subconjunto_seleccionado,
+                        bipartite_0_list,
+                        bipartite_1_list,
+                        bipartite_0_values,
+                        listaNodos,
+                    )
+
+                    print(distribucionProbabilidades)
+
+        # Si se encontró una partición, dejar de incrementar el número de aristas combinadas
+        if partition_found:
+            break
+
+"""
