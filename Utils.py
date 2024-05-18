@@ -14,6 +14,8 @@ import itertools
 import numpy as np
 from scipy.stats import wasserstein_distance
 from tabulate import tabulate
+from states import Tres, Cuatro, Cinco
+from itertools import product
 
 
 class Utils:
@@ -46,69 +48,12 @@ class Utils:
         return random.choice(shapes)
 
     def generateWeight(self):
-        return random.randint(1, 100)
+        return round(random.random(), 4)
 
     def load_css(self):
         with open("styles.css") as f:
             css = f"<style>{f.read()}</style>"
         return css
-
-    def generate_graph_json(self, nodes, edges):
-
-        graph_data = {
-            "graph": [
-                {
-                    "name": (
-                        st.session_state["name_graph"]
-                        if st.session_state["name_graph"]
-                        else "Grafo"
-                    ),
-                    "data": [],
-                    "generalData1": 100,
-                    "generalData2": "Alg",
-                    "generalData3": 300,
-                    "isDirected": st.session_state["directed"],
-                    "isWeighted": st.session_state["weighted"],
-                    "isConnected": st.session_state["connected"],
-                    "isConex": st.session_state["conex"],
-                }
-            ]
-        }
-
-        for node in nodes:
-            linked_nodes = []
-            # Añadir los nodos que tengan una arista con el nodo actual
-            for edge in edges:
-                if int(edge.source) == int(node.id):
-                    linked_nodes.append(
-                        {
-                            "node_id": int(edge.to),
-                            "weight": (
-                                float(edge.label)
-                                if st.session_state["weighted"]
-                                else 0.0
-                            ),
-                            "color": edge.color,
-                            "width": edge.width,
-                            "dashes": edge.dashes,
-                        }
-                    )
-
-            node_data = {
-                "id": int(node.id),
-                "label": node.label,
-                "color": node.color,
-                "shape": node.shape,
-                "data": {},
-                "type": "",
-                "linkedTo": linked_nodes,
-                "radius": node.size,
-                "coordinates": {"x": 0, "y": 0},
-            }
-            graph_data["graph"][0]["data"].append(node_data)
-
-        # Convierte el objeto del grafo a una cadena JSON
-        return json.dumps(graph_data)
 
     def create_download_button(self, json_str):
         name = st.sidebar.text_input("Nombre del archivo")
@@ -119,595 +64,64 @@ class Utils:
             mime="application/json",
         )
 
-    def open_json_file(self, data):
-        for graph in data["graph"]:
-            for node_data in graph["data"]:
-                node = Node(
-                    id=node_data["id"],
-                    label=node_data["label"],
-                    color=node_data["color"],
-                    shape=node_data["shape"],
-                    font={"color": "#FFFFFF"},
-                    size=15,
-                )
-                st.session_state["nodes"].append(node)
+    def obtener_subconjunto(self, selected_subconjunto):
+        if selected_subconjunto == "Tres":
+            return Tres
+        elif selected_subconjunto == "Cuatro":
+            return Cuatro
+        elif selected_subconjunto == "Cinco":
+            return Cinco
 
-                for linked_node in node_data["linkedTo"]:
-                    edge = Edge(
-                        source=node.id,
-                        target=linked_node["node_id"],
-                        color=linked_node["color"],
-                        width=linked_node["width"],
-                        dashes=linked_node["dashes"],
-                        label=(
-                            str(linked_node["weight"]) if linked_node["weight"] else ""
-                        ),
-                    )
-                    st.session_state["edges"].append(edge)
+    def select_subconjunto_UI(self):
+        option = st.radio("Selecciona un subconjunto:", ["Tres", "Cuatro", "Cinco"])
+        return self.obtener_subconjunto(option)
 
-                    st.session_state["graph"] = True
+    def strategies(self, tablacomparativa, listaNodos):
+        df = pd.DataFrame(tablacomparativa[1:], columns=tablacomparativa[0])
 
-    def add_node_to_graph(self, selected):
-        if selected == "Eliminar Nodo" and st.session_state["graph"]:
-            node_id = st.sidebar.selectbox(
-                "Seleccione nodo: ",
-                [node.id for node in st.session_state["nodes"]],
-            )
+        cadena = "".join(listaNodos)
+        st.write(f"## **P({cadena}$^t$ $^+$ $^1$ | {cadena}$^t$)**")
+        st.dataframe(df)
 
-            actual_node = next(
-                (node for node in st.session_state["nodes"] if node.id == node_id),
-                None,
-            )
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+        with col1:
+            optionep = st.multiselect("Estados presentes:", listaNodos)
+        with col2:
+            optionef = st.multiselect("Estados futuros:", listaNodos)
+        with col3:
+            combinaciones = list(product([0, 1], repeat=len(optionep)))
+            valorE = st.selectbox("Selecciona el valor presente: ", combinaciones)
+        with col4:
+            return st.button("Generar distribución"), optionep, optionef, valorE
 
-            if st.sidebar.button("Eliminar"):
+    def strategies_UI(
+        self, optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
+    ):
 
-                st.session_state["copy_nodes"] = copy.deepcopy(
-                    st.session_state["nodes"]
-                )
+        optionep.sort()
+        optionef.sort()
+        cadena1 = "".join(optionep)
+        cadena2 = "".join(optionef)
+        st.write(f"## **P({cadena2}$^t$ $^+$ $^1$ | {cadena1}$^t$ = {valorE})**")
 
-                st.session_state["copy_edges"] = copy.deepcopy(
-                    st.session_state["edges"]
-                )
-
-                st.session_state["nodes"].remove(actual_node)
-
-                edges_to_remove = [
-                    edge
-                    for edge in st.session_state["edges"]
-                    if edge.source == actual_node.id or edge.to == actual_node.id
-                ]
-                st.session_state["edges"] = [
-                    edge
-                    for edge in st.session_state["edges"]
-                    if edge not in edges_to_remove
-                ]
-
-                st.session_state["last_action"] = "Delete Node"
-                self.posicionate()
-
-        elif (
-            selected == "Agregar Nodo" or selected == "Editar Nodo"
-        ) and st.session_state["graph"]:
-            with st.sidebar.expander("Nodo"):
-                # Campo de texto para introducir el ID del nodo
-                list = [
-                    "diamond",
-                    "dot",
-                    "square",
-                    "star",
-                    "triangle",
-                    "triangleDown",
-                    "hexagon",
-                ]
-                if selected == "Agregar Nodo" and st.session_state["graph"]:
-                    node_id = st.text_input("ID del nodo")
-                    actual_node = None
-                    index = 0
-                elif selected == "Editar Nodo" and st.session_state["graph"]:
-                    node_id = st.selectbox(
-                        "Seleccione nodo: ",
-                        [node.id for node in st.session_state["nodes"]],
-                    )
-                    actual_node = next(
-                        (
-                            node
-                            for node in st.session_state["nodes"]
-                            if node_id == node.id
-                        ),
-                        None,
-                    )
-                    index = list.index(actual_node.shape)
-
-                # Campo de texto para introducir el nombre del nodo
-                node_name = st.text_input(
-                    "Nombre del nodo", actual_node.label if actual_node else ""
-                )
-
-                # Selector de color para elegir el color del nodo
-                node_color = st.color_picker(
-                    "Color del nodo",
-                    actual_node.color if actual_node else "#ffffff",
-                )
-
-                # Selector de forma del nodo, como diccionario
-                node_shape = st.selectbox("Forma del nodo", list, index=index)
-
-                # Botón para agregar el nodo al grafo
-                if selected == "Agregar Nodo":
-                    add_node_button = st.button("Agregar nodo")
-
-                    if add_node_button:
-                        st.session_state["copy_nodes"] = copy.deepcopy(
-                            st.session_state["nodes"]
-                        )
-                        new_node = Node(
-                            id=node_id,
-                            label=node_name,
-                            size=15,
-                            shape=node_shape,
-                            color=node_color,
-                            font={"color": "#FFFFFF"},
-                        )
-
-                        st.session_state["nodes"].append(new_node)
-                        st.session_state["last_action"] = "New Node"
-                        self.posicionate()
-
-                elif selected == "Editar Nodo":
-                    if st.button("Cambiar Nodo"):
-
-                        st.session_state["copy_nodes"] = copy.deepcopy(
-                            st.session_state["nodes"]
-                        )
-
-                        index = st.session_state["nodes"].index(actual_node)
-
-                        st.session_state["nodes"][index].label = node_name
-                        st.session_state["nodes"][index].color = node_color
-                        st.session_state["nodes"][index].shape = node_shape
-
-                        st.session_state["last_action"] = "Edit Node"
-                        self.posicionate()
-
-    def export_to_image(self):
-        # Definir las coordenadas del área de la captura de pantalla
-        x, y, width, height = 580, 320, 1150, 720
-
-        # Tomar la captura de pantalla
-        screenshot = pg.screenshot(region=(x, y, width, height))
-
-        # Crear un objeto BytesIO para guardar la imagen
-        buf = io.BytesIO()
-
-        # Guardar la captura de pantalla en el objeto BytesIO
-        screenshot.save(buf, format="png")
-
-        date = self.generateDate()
-
-        # Crear un botón de descarga para la imagen
-        st.download_button(
-            label="Descargar imagen",
-            data=buf.getvalue(),
-            file_name="graph-" + date + ".png",
-            mime="image/png",
+        distribucionProbabilidades = self.generarDistribucionProbabilidades(
+            subconjunto_seleccionado, optionep, optionef, valorE, listaNodos
         )
 
-    def export_to_xlsx(self, nodes_state, edges_state):
-        # Crea una lista para almacenar los datos de los nodos
-        nodes_data = []
-
-        # Recorre cada nodo y arista en el estado de la sesión
-        for node in nodes_state:
-            linked_nodes = [
-                {
-                    "node_id": edge.to,
-                    "weight": edge.label if st.session_state["weighted"] else 0,
-                    "color": edge.color,
-                }
-                for edge in edges_state
-                if edge.source == node.id
-            ]
-            # Agrega los datos del nodo a la lista
-            nodes_data.append(
-                {
-                    "id": node.id,
-                    "label": node.label,
-                    "color": node.color,
-                    "shape": node.shape,
-                    "size": node.size,
-                    "data": {},
-                    "type": "",
-                    "linkedTo": ", ".join(
-                        [
-                            f"(node_id: {ln['node_id']}) (weight: {ln['weight']}) (color: {ln['color']})"
-                            for ln in linked_nodes
-                        ]
-                    ),
-                    "radius": node.size / 2,
-                    "coordinates": {"x": 0, "y": 0},
-                }
-            )
-
-        # Crea un DataFrame para los nodos
-        nodes_df = pd.DataFrame(nodes_data)
-
-        # Crea un objeto BytesIO para guardar el archivo XLSX
-        buf = io.BytesIO()
-
-        # Guarda los datos de los nodos en un archivo XLSX
-        nodes_df.to_excel(buf, index=False)
-
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Crea un botón de descarga para el archivo XLSX
-        st.download_button(
-            label="Descargar XLSX",
-            data=buf.getvalue(),
-            file_name="graph-" + date + ".xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        df = pd.DataFrame(
+            distribucionProbabilidades[1:], columns=distribucionProbabilidades[0]
         )
 
-    def generate_graph_personalized(self):
-        # Crear un expander para el grafo en la barra lateral
-        with st.sidebar.expander("Grafo"):
-            # Campo de texto para introducir el nombre del grafo
-            name = st.text_input("Nombre del grafo")
+        st.dataframe(df)
 
-            # Checkbox para elegir si el grafo es dirigido
-            directed = st.checkbox("¿Es dirigido?")
+        st.session_state["window"] = False
+        st.session_state["nodes"], st.session_state["edges"] = [], []
 
-            # Checkbox para elegir si el grafo es ponderado
-            weighted = st.checkbox("¿Es ponderado?")
+        G.generarGrafoTablaDistribucion(
+            listaNodos, st.session_state["nodes"], st.session_state["edges"]
+        )
 
-            # Botón para crear el grafo
-            create_graph = st.button("Crear grafo")
-
-            # Si se presiona el botón de crear grafo
-            if create_graph:
-                return [name, directed, weighted]
-
-    def add_edge_to_graph(self, selected):
-        edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))
-        if selected == "Agregar Arista" and st.session_state["graph"]:
-            # Crear un expander para la arista en la barra lateral
-            with st.sidebar.expander("Arista"):
-                # Crear un formulario para la arista
-                with st.form(key="edge_form"):
-                    # Campo de texto para introducir el nodo de inicio de la arista
-                    edge_start = st.selectbox(
-                        "Nodo de inicio de la arista",
-                        [node.id for node in st.session_state["nodes"]],
-                    )
-
-                    # Campo de texto para introducir el nodo final de la arista
-                    edge_end = st.selectbox(
-                        "Nodo final de la arista",
-                        [node.id for node in st.session_state["nodes"]],
-                    )
-
-                    edge_label = ""
-                    if st.session_state["weighted"]:
-                        # Campo de texto para introducir la etiqueta de la arista
-                        edge_label = st.text_input("Etiqueta de la arista")
-                    else:
-                        edge_label = ""
-
-                    edge_color = st.color_picker("Color de la arista")
-
-                    # Botón para agregar la arista al grafo
-                    add_edge_button = st.form_submit_button(label="Agregar arista")
-
-                    if add_edge_button:
-                        if st.session_state["directed"]:
-                            new_edge = Edge(
-                                source=edge_start,
-                                target=edge_end,
-                                label=edge_label,
-                                color=edge_color,
-                                dashes=False,
-                                width=1,
-                            )
-                            st.session_state["copy_edges"] = copy.deepcopy(
-                                st.session_state["edges"]
-                            )
-                            st.session_state["edges"].append(new_edge)
-
-                            for edge in st.session_state["edges"]:
-                                st.write(edge.source, edge.to)
-
-                            self.posicionate()
-
-                        else:
-                            b = True
-                            for edge in st.session_state["edges"]:
-                                if (
-                                    edge_start == edge.to and edge_end == edge.source
-                                ) or (
-                                    edge_start == edge.source and edge_end == edge.to
-                                ):
-                                    b = False
-                            if b == False:
-                                st.warning(
-                                    "La arista ingresada ya se encuentra en el grafo."
-                                )
-                            else:
-                                new_edge_1 = Edge(
-                                    source=edge_start,
-                                    target=edge_end,
-                                    label=edge_label,
-                                    color=edge_color,
-                                    dashes=False,
-                                    width=1,
-                                )
-
-                                st.session_state["copy_edges"] = copy.deepcopy(
-                                    st.session_state["edges"]
-                                )
-                                st.session_state["edges"].append(new_edge_1)
-                                self.posicionate()
-
-                    st.session_state["last_action"] = "New Edge"
-
-        elif selected == "Editar Arista" and st.session_state["graph"]:
-            actual_source = st.sidebar.selectbox(
-                "Seleccione arista: ",
-                [(edge.source, edge.to) for edge in edges],
-            )
-            for edge in st.session_state["edges"]:
-                if edge.source == actual_source[0] and edge.to == actual_source[1]:
-                    actual_edge = edge
-
-            edge_label = ""
-            if st.session_state["weighted"]:
-                # Campo de texto para introducir la etiqueta de la arista
-                edge_label = st.sidebar.text_input(
-                    "Etiqueta de la arista", actual_edge.label
-                )
-
-            edge_color = st.sidebar.color_picker(
-                "Color de la arista", actual_edge.color
-            )
-
-            if st.sidebar.button("Cambiar Arista"):
-
-                st.session_state["copy_edges"] = copy.deepcopy(
-                    st.session_state["edges"]
-                )
-
-                index = st.session_state["edges"].index(actual_edge)
-
-                if st.session_state["directed"]:
-                    st.session_state["edges"][index].label = edge_label
-                    st.session_state["edges"][index].color = edge_color
-
-                else:
-                    st.session_state["edges"][index].label = edge_label
-                    st.session_state["edges"][index].color = edge_color
-                self.posicionate()
-
-                st.session_state["last_action"] = "Edit Edge"
-
-        elif selected == "Eliminar Arista" and st.session_state["graph"]:
-            actual_source = st.sidebar.selectbox(
-                "Seleccione arista: ",
-                [(edge.source, edge.to) for edge in edges],
-            )
-
-            actual_edge_2 = None
-
-            if st.session_state["directed"]:
-                actual_edge = next(
-                    (
-                        edge
-                        for edge in st.session_state["edges"]
-                        if edge.source == actual_source[0]
-                        and edge.to == actual_source[1]
-                    ),
-                    None,
-                )
-
-            else:
-                actual_edge = next(
-                    (
-                        edge
-                        for edge in st.session_state["edges"]
-                        if edge.source == actual_source[0]
-                        and edge.to == actual_source[1]
-                    ),
-                    None,
-                )
-                actual_edge_2 = next(
-                    (
-                        edge
-                        for edge in st.session_state["edges"]
-                        if edge.source == actual_source[1]
-                        and edge.to == actual_source[0]
-                    ),
-                    None,
-                )
-
-            if st.sidebar.button("Eliminar"):
-                st.session_state["copy_edges"] = copy.deepcopy(
-                    st.session_state["edges"]
-                )
-                st.session_state["edges"].remove(actual_edge)
-                if actual_edge_2:
-                    st.session_state["edges"].remove(actual_edge_2)
-                st.session_state["last_action"] = "Delete Edge"
-                self.posicionate()
-            """
-            if st.sidebar.button("Eliminar"):
-                st.session_state["copy_edges"] = copy.deepcopy(
-                    st.session_state["edges"]
-                )
-                index1 = st.session_state["edges"].index(actual_edge)
-                st.session_state["edges"][index1].width = 5
-                st.session_state["edges"][index1].dashes = True
-                if actual_edge_2:
-                    index2 = st.session_state["edges"].index(actual_edge_2)
-                    st.session_state["edges"][index2].width = 5
-                    st.session_state["edges"][index2].dashes = True
-                st.session_state["last_action"] = "Delete Edge"
-                self.posicionate()
-            """
-
-    def generate_graph_random(self):
-        # Crear un expander para el grafo en la barra lateral
-        with st.sidebar.expander("Grafo"):
-            with st.form(key="graph_form"):
-                # Campo de texto para introducir el nombre del grafo
-                st.session_state["name_graph"] = st.text_input("Nombre del Grafo")
-
-                # Checkbox para elegir si el grafo es dirigido
-                st.session_state["directed"] = st.checkbox("¿Es dirigido?")
-
-                # Checkbox para elegir si el grafo es ponderado
-                st.session_state["weighted"] = st.checkbox("¿Es ponderado?")
-
-                # Checkbox para elegir si el grafo es completo
-                st.session_state["connected"] = st.checkbox("¿Es completo?")
-
-                # Checkbox para elegir si el grafo es conexo
-                st.session_state["conex"] = st.checkbox("¿Es conexo?")
-
-                # Campo de texto para introducir la cantidad de nodos
-                node_qty = st.text_input("Cantidad de nodos")
-
-                # Botón para generar el grafo
-                generate_graph = st.form_submit_button(label="Generar")
-
-                if generate_graph:
-                    if st.session_state["connected"] and st.session_state["conex"]:
-                        # Crear un grafo aleatorio conexo y completo
-                        G = nx.connected_watts_strogatz_graph(
-                            int(node_qty), int(node_qty) - 1, 0.5, tries=100
-                        )
-                    elif st.session_state["connected"]:
-                        # Crear un grafo aleatorio completo
-                        G = nx.complete_graph(int(node_qty))
-                    elif st.session_state["conex"]:
-                        # Crear un grafo aleatorio conexo
-                        G = nx.connected_watts_strogatz_graph(
-                            int(node_qty), int(node_qty) // 2, 0.5, tries=100
-                        )
-                    else:
-                        # Crear un grafo aleatorio
-                        G = nx.gnp_random_graph(
-                            int(node_qty),
-                            0.1,
-                            directed=st.session_state["directed"],
-                        )
-
-                    # pos = nx.circular_layout(G)
-                    # Convertir el grafo de networkx a formato agraph
-                    nodes = [
-                        Node(
-                            label="Nodo " + str(n),
-                            id=n,
-                            color=self.generateColor(),
-                            shape=self.generateShape(),
-                            size=15,
-                            font={"color": "#FFFFFF"},
-                            physics=True,
-                            # x= pos[n][0] * 500, y = pos[n][1] * 500
-                        )
-                        for n in G.nodes()
-                    ]
-
-                    # Inicializar la lista de aristas
-                    edges = []
-
-                    # Si el grafo es ponderado, agregar las aristas con pesos
-                    if st.session_state["weighted"] and st.session_state["directed"]:
-                        for e in G.edges():
-                            color = self.generateColor()
-                            label = str(self.generateWeight())
-                            edges.append(
-                                Edge(
-                                    source=e[0],
-                                    target=e[1],
-                                    label=label,
-                                    color=color,
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-
-                    elif (
-                        st.session_state["weighted"]
-                        and not st.session_state["directed"]
-                    ):
-                        st.write("Ponderado no dirigido")
-                        for e in G.edges():
-                            color = self.generateColor()
-                            label = str(self.generateWeight())
-                            edges.append(
-                                Edge(
-                                    source=e[0],
-                                    target=e[1],
-                                    label=label,
-                                    color=color,
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-                            edges.append(
-                                Edge(
-                                    source=e[1],
-                                    target=e[0],
-                                    label=label,
-                                    color=color,
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-
-                    elif (
-                        not st.session_state["weighted"]
-                        and st.session_state["directed"]
-                    ):
-                        for e in G.edges():
-                            edges.append(
-                                Edge(
-                                    source=e[0],
-                                    target=e[1],
-                                    color=self.generateColor(),
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-
-                    elif (
-                        not st.session_state["weighted"]
-                        and not st.session_state["directed"]
-                    ):
-                        for e in G.edges():
-                            edges.append(
-                                Edge(
-                                    source=e[0],
-                                    target=e[1],
-                                    color=self.generateColor(),
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-                            edges.append(
-                                Edge(
-                                    source=e[1],
-                                    target=e[0],
-                                    color=self.generateColor(),
-                                    width=1,
-                                    dashes=False,
-                                )
-                            )
-
-                    # Guardar los nodos y aristas en el estado de sesión
-                    st.session_state["nodes"] = nodes
-                    st.session_state["edges"] = edges
-
-                    st.session_state["graph"] = True
-                    st.session_state["last_action"] = "New Node"
-                    self.posicionate()
+        return distribucionProbabilidades
 
     def generate_table_data(self):
         # Crear un DataFrame con los datos de los nodos
@@ -754,60 +168,17 @@ class Utils:
         return is_bipartite, components
 
     ## TALLER 3
-    def generarGrafoTablaDistribucion(self, listaNodos, nodes, edges):
-        # nodes, edges = [], []
-        # print(nodes)
-        num = 0
-        ultimosNodos1, ultimosNodos2 = [], []
-        for i in listaNodos:
-            new_node = Node(
-                id=num,
-                label=i,
-                size=15,
-                color=self.generateColor(),
-                font={"color": "#FFFFFF"},
-            )
-            new_node2 = Node(
-                id=num + 1,
-                label=i + "'",
-                size=15,
-                color=self.generateColor(),
-                font={"color": "#FFFFFF"},
-            )
-
-            nodes.append(new_node)
-            nodes.append(new_node2)
-
-            for last_node1 in ultimosNodos1:
-                new_edge1 = Edge(
-                    source=last_node1.id,
-                    target=new_node2.id,
-                    dashes=False,
-                    directed=True,
-                )
-                edges.append(new_edge1)
-
-            for last_node2 in ultimosNodos2:
-                new_edge2 = Edge(
-                    target=last_node2.id,
-                    source=new_node.id,
-                    dashes=False,
-                    directed=True,
-                )
-                edges.append(new_edge2)
-
-            ultimosNodos1.append(new_node)
-            ultimosNodos2.append(new_node2)  # Actualizar el último new_node2
-            num = num + 2
-
-        self.posicionate()
-
-    def generarDistribucionProbabilidades(self, tabla, ep, ef, num, estados):
+    def generarDistribucionProbabilidades(
+        self, tabla, ep, ef, num, estados, tablasCreadas={}
+    ):
         ep_index = [estados.index(i) for i in ep]
         probabilidadesDistribuidas = []
 
         for i in ef:
-            nueva_tabla = self.generarTablaComparativa(tabla[i])
+            if i in tablasCreadas:
+                nueva_tabla = tablasCreadas[i]
+            else:
+                nueva_tabla = self.generarTablaComparativa(tabla[i])
             filtro2 = self.porcentajeDistribuido(nueva_tabla, ep_index, num)
 
             probabilidadesDistribuidas.append(filtro2)
@@ -853,10 +224,10 @@ class Utils:
         valores = [0, 0]
         for fila in tabla1:
             valor1 = (
-                fila[1] if isinstance(fila[1], int) else fila[1][0]
+                fila[1] if isinstance(fila[1], float) else fila[1][0]
             )  # Asegurar que sea un número
             valor2 = (
-                fila[2] if isinstance(fila[2], int) else fila[2][0]
+                fila[2] if isinstance(fila[2], float) else fila[2][0]
             )  # Asegurar que sea un número
             valores[0] += valor1
             valores[1] += valor2
@@ -885,7 +256,7 @@ class Utils:
     def generarTablaComparativa(self, diccionario):
         lista = [["Llave", (1,), (0,)]]
         for key, value in diccionario.items():
-            lista.append([key, value, 1 - value])
+            lista.append([key, float(value), float(1 - value)])
 
         return lista
 
@@ -910,6 +281,56 @@ class Utils:
         helper(0)
         return transiciones, estados
 
+    # def generar_combinaciones(self, elementos, valores=None, memo=None):
+    #     if memo is None:
+    #         memo = {}
+
+    #     elementos.sort()  # Ordenar los elementos para garantizar el mismo orden en cada llamada
+
+    #     key = tuple(elementos)
+    #     if key in memo:
+    #         return memo[key]
+
+    #     combinaciones = []
+    #     if valores is None:
+    #         valores = [None] * len(elementos)
+
+    #     # Agregar la combinación adicional
+    #     combinacion_vacia = [[], elementos, (), tuple(valores)]
+    #     combinaciones.append(combinacion_vacia)
+
+    #     for i in range(1, len(elementos)):
+    #         for subconjunto in combinations(elementos, i):
+    #             complemento = tuple(x for x in elementos if x not in subconjunto)
+    #             tupla_subconjunto = tuple(
+    #                 valores[elementos.index(elem)] if valores else None
+    #                 for elem in subconjunto
+    #             )
+    #             tupla_complemento = tuple(
+    #                 valores[elementos.index(elem)] if valores else None
+    #                 for elem in complemento
+    #             )
+    #             nueva_combinacion = [
+    #                 sorted(list(subconjunto)),  # Ordenar los elementos del subconjunto
+    #                 sorted(list(complemento)),  # Ordenar los elementos del complemento
+    #                 tupla_subconjunto,
+    #                 tupla_complemento,
+    #             ]
+    #             combinacion_invertida = [
+    #                 sorted(list(complemento)),  # Ordenar los elementos del complemento
+    #                 sorted(list(subconjunto)),  # Ordenar los elementos del subconjunto
+    #                 tupla_complemento,
+    #                 tupla_subconjunto,
+    #             ]
+    #             if (
+    #                 nueva_combinacion not in combinaciones
+    #                 and combinacion_invertida not in combinaciones
+    #             ):
+    #                 combinaciones.append(nueva_combinacion)
+
+    #     memo[key] = combinaciones
+    #     return combinaciones
+
     def generar_combinaciones(self, elementos, valores=None, memo=None):
         if memo is None:
             memo = {}
@@ -928,33 +349,26 @@ class Utils:
         combinacion_vacia = [[], elementos, (), tuple(valores)]
         combinaciones.append(combinacion_vacia)
 
-        for i in range(1, len(elementos)):
+        n = len(elementos)
+        for i in range(1, n):
             for subconjunto in combinations(elementos, i):
                 complemento = tuple(x for x in elementos if x not in subconjunto)
                 tupla_subconjunto = tuple(
-                    valores[elementos.index(elem)] if valores else None
-                    for elem in subconjunto
+                    valores[elementos.index(elem)] for elem in subconjunto
                 )
                 tupla_complemento = tuple(
-                    valores[elementos.index(elem)] if valores else None
-                    for elem in complemento
+                    valores[elementos.index(elem)] for elem in complemento
                 )
+
                 nueva_combinacion = [
-                    sorted(list(subconjunto)),  # Ordenar los elementos del subconjunto
-                    sorted(list(complemento)),  # Ordenar los elementos del complemento
+                    list(subconjunto),  # Lista de subconjunto
+                    list(complemento),  # Lista de complemento
                     tupla_subconjunto,
                     tupla_complemento,
                 ]
-                combinacion_invertida = [
-                    sorted(list(complemento)),  # Ordenar los elementos del complemento
-                    sorted(list(subconjunto)),  # Ordenar los elementos del subconjunto
-                    tupla_complemento,
-                    tupla_subconjunto,
-                ]
-                if (
-                    nueva_combinacion not in combinaciones
-                    and combinacion_invertida not in combinaciones
-                ):
+
+                # Para evitar agregar combinaciones duplicadas, ordenamos los elementos
+                if nueva_combinacion not in combinaciones:
                     combinaciones.append(nueva_combinacion)
 
         memo[key] = combinaciones
@@ -977,82 +391,155 @@ class Utils:
 
         return best_partition, min_emd
 
+    # def encontrar_distribuciones_combinaciones(
+    #     self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
+    # ):
+    #     res = []
+    #     for combinacion_ep in combinaciones_ep:
+    #         for combinacion_ef in combinaciones_ef:
+    #             # Si hay un elemento en común, no se puede hacer la combinación
+    #             if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
+    #                 combinacion_ep[1]
+    #             ) & set(combinacion_ef[1]):
+    #                 continue
+
+    #             if (
+    #                 len(combinacion_ep[0]) == 0
+    #                 and len(combinacion_ef[0]) == 0
+    #                 or len(combinacion_ep[1]) == 0
+    #                 and len(combinacion_ef[1]) == 0
+    #             ):
+    #                 continue
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[0],
+    #                     combinacion_ef[0],
+    #                     combinacion_ep[2],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[1],
+    #                     combinacion_ef[1],
+    #                     combinacion_ep[3],
+    #                     estados,
+    #                 )
+    #             )
+
+    #     for combinacion_ep in combinaciones_ep:
+    #         for combinacion_ef in combinaciones_ef:
+    #             # Si hay un elemento en común, no se puede hacer la combinación
+    #             if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
+    #                 combinacion_ep[1]
+    #             ) & set(combinacion_ef[0]):
+    #                 continue
+
+    #             if (
+    #                 len(combinacion_ep[0]) == 0
+    #                 and len(combinacion_ef[1]) == 0
+    #                 or len(combinacion_ep[1]) == 0
+    #                 and len(combinacion_ef[0]) == 0
+    #             ):
+    #                 continue
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[0],
+    #                     combinacion_ef[1],
+    #                     combinacion_ep[2],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[1],
+    #                     combinacion_ef[0],
+    #                     combinacion_ep[3],
+    #                     estados,
+    #                 )
+    #             )
+
+    #     return res
+
     def encontrar_distribuciones_combinaciones(
         self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
     ):
         res = []
-        for combinacion_ep in combinaciones_ep:
-            for combinacion_ef in combinaciones_ef:
-                # Si hay un elemento en común, no se puede hacer la combinación
-                if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
-                    combinacion_ep[1]
-                ) & set(combinacion_ef[1]):
-                    continue
+        memo = {}
 
-                if (
-                    len(combinacion_ep[0]) == 0
-                    and len(combinacion_ef[0]) == 0
-                    or len(combinacion_ep[1]) == 0
-                    and len(combinacion_ef[1]) == 0
-                ):
-                    continue
-
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[0],
-                        combinacion_ef[0],
-                        combinacion_ep[2],
-                        estados,
-                    )
+        def generarDistribucionProbabilidades_memo(
+            subconjuntos, comb_ep, comb_ef, ep_vals, estados
+        ):
+            key = (tuple(comb_ep), tuple(comb_ef), tuple(ep_vals))
+            if key not in memo:
+                memo[key] = self.generarDistribucionProbabilidades(
+                    subconjuntos, comb_ep, comb_ef, ep_vals, estados
                 )
-
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[1],
-                        combinacion_ef[1],
-                        combinacion_ep[3],
-                        estados,
-                    )
-                )
+            return memo[key]
 
         for combinacion_ep in combinaciones_ep:
             for combinacion_ef in combinaciones_ef:
-                # Si hay un elemento en común, no se puede hacer la combinación
-                if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
-                    combinacion_ep[1]
-                ) & set(combinacion_ef[0]):
-                    continue
+                # Verificar si hay un elemento en común en ambos combinaciones
+                interseccion_00 = set(combinacion_ep[0]) & set(combinacion_ef[0])
+                interseccion_11 = set(combinacion_ep[1]) & set(combinacion_ef[1])
+                interseccion_01 = set(combinacion_ep[0]) & set(combinacion_ef[1])
+                interseccion_10 = set(combinacion_ep[1]) & set(combinacion_ef[0])
 
-                if (
-                    len(combinacion_ep[0]) == 0
-                    and len(combinacion_ef[1]) == 0
-                    or len(combinacion_ep[1]) == 0
-                    and len(combinacion_ef[0]) == 0
-                ):
-                    continue
+                if not interseccion_00 and not interseccion_11:
+                    if len(combinacion_ep[0]) != 0 or len(combinacion_ef[0]) != 0:
+                        res.append(
+                            generarDistribucionProbabilidades_memo(
+                                subconjuntos,
+                                combinacion_ep[0],
+                                combinacion_ef[0],
+                                combinacion_ep[2],
+                                estados,
+                            )
+                        )
 
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[0],
-                        combinacion_ef[1],
-                        combinacion_ep[2],
-                        estados,
-                    )
-                )
+                    if len(combinacion_ep[1]) != 0 or len(combinacion_ef[1]) != 0:
+                        res.append(
+                            generarDistribucionProbabilidades_memo(
+                                subconjuntos,
+                                combinacion_ep[1],
+                                combinacion_ef[1],
+                                combinacion_ep[3],
+                                estados,
+                            )
+                        )
 
-                res.append(
-                    self.generarDistribucionProbabilidades(
-                        subconjuntos,
-                        combinacion_ep[1],
-                        combinacion_ef[0],
-                        combinacion_ep[3],
-                        estados,
-                    )
-                )
+                if not interseccion_01 and not interseccion_10:
+                    if len(combinacion_ep[0]) != 0 or len(combinacion_ef[1]) != 0:
+                        res.append(
+                            generarDistribucionProbabilidades_memo(
+                                subconjuntos,
+                                combinacion_ep[0],
+                                combinacion_ef[1],
+                                combinacion_ep[2],
+                                estados,
+                            )
+                        )
 
+                    if len(combinacion_ep[1]) != 0 or len(combinacion_ef[0]) != 0:
+                        res.append(
+                            generarDistribucionProbabilidades_memo(
+                                subconjuntos,
+                                combinacion_ep[1],
+                                combinacion_ef[0],
+                                combinacion_ep[3],
+                                estados,
+                            )
+                        )
+
+        # todo: calcular el emd de cada distribución y no calcularlo a todas al final
         return res
 
     def calculate_emd(self, original_system, system_partition):
@@ -1198,367 +685,97 @@ class Utils:
 
             posnum += 500
 
-    # Estrategia #2
-    def find_components(self, graph):
-        # Encontrar todas las componentes débilmente conectadas
-        components = list(nx.weakly_connected_components(graph))
-        return components
+    def expandirTabla(self, tabla, posicion):
+        nueva_tabla = [tabla[0]]  # Mantener la primera fila de la tabla original
+        indicesVisitados = {}
 
-    def add_empty_node(self, graph, component):
-        # Encontrar nodos de la parte bipartita 0 en la componente
-        bipartite_0_nodes = [
-            node for node in component if graph.nodes[node]["bipartite"] == 0
-        ]
+        for fila in tabla[1:]:
+            nuevo_indice = fila[0][:posicion] + fila[0][posicion + 1 :]
 
-        # Si no hay nodos de bipartite=0, no es necesario añadir un nodo vacío
-        if len(bipartite_0_nodes) == 0:
-            return component
-
-        # Si hay nodos de bipartite=0 y solo queda uno en la componente, añadir un nodo vacío
-        if len(bipartite_0_nodes) == 1:
-            empty_node = ""
-            graph.add_node(empty_node, bipartite=0)
-            component.add(empty_node)
-
-        return component
-
-    def separate_bipartite_components(self, graph, component):
-        # Inicializar conjuntos de nodos de bipartite=0 y bipartite=1
-        bipartite_0_set = set()
-        bipartite_1_set = set()
-
-        # Separar la componente en conjuntos de nodos de bipartite=0 y bipartite=1
-        for node in component:
-            if graph.nodes[node]["bipartite"] == 0:
-                bipartite_0_set.add(node)
+            if nuevo_indice not in indicesVisitados:
+                nueva_tabla.append(fila)
+                indicesVisitados[nuevo_indice] = len(nueva_tabla) - 1
             else:
-                bipartite_1_set.add(node)
+                index = indicesVisitados[nuevo_indice]
+                nueva_tabla[index][1] = (nueva_tabla[index][1] + fila[1]) / 2
+                nueva_tabla[index][2] = (nueva_tabla[index][2] + fila[2]) / 2
 
-        # Si no hay nodos de bipartite=1 en la componente, agregar un nodo vacío
-        if not bipartite_1_set:
-            bipartite_1_set.add("")
+                nueva_tabla.append(
+                    [fila[0], nueva_tabla[index][1], nueva_tabla[index][2]]
+                )
 
-        # Remover el nodo vacío del conjunto de bipartite=0 si existe
-        bipartite_0_set.discard("")
+        return nueva_tabla
 
-        return bipartite_0_set, bipartite_1_set
-
-    def remove_edges_and_check_components(
-        self, graph, state_values, subconjunto_seleccionado, listaNodos
+    def estrategia2(
+        self, edges, subconjuntos, estados, distribucionOriginal, ep, ef, num
     ):
-        # Crear una copia del grafo original
-        graph_copy = graph.copy()
+        tablas, tablas_distribuidas = {}, {}
+        for key, value in subconjuntos.items():
+            tablas[key] = self.generarTablaComparativa(value)
 
-        # Inicializar la lista de aristas eliminadas
-        removed_edges = []
+        for arista in edges:
+            tabla_aux = copy.deepcopy(tablas)
+            tablas_distribuidas = {}
+            nombre_origen, nombre_destino = (
+                st.session_state["nodes"][arista.source].label,
+                st.session_state["nodes"][arista.to].label[0],
+            )
 
-        # Obtener nodos de bipartite=0
-        bipartite_0_nodes = [
-            node for node, attr in graph.nodes(data=True) if attr["bipartite"] == 0
-        ]
+            indice = estados.index(nombre_origen)
+            tablas_distribuidas[nombre_destino] = self.expandirTabla(
+                tabla_aux[nombre_destino], indice
+            )
+            tabla_aux = copy.deepcopy(tablas)
 
-        # Recorrer los nodos de bipartite=0
-        for node in bipartite_0_nodes:
-            # Obtener las aristas del nodo
-            node_edges = list(graph.edges(node))
-            for edge in node_edges:
-                # Eliminar una arista
-                graph_temp = graph_copy.copy()
-                graph_temp.remove_edge(*edge)
+            st.write(
+                f"Se elimina la arista: {nombre_origen} ---------> {nombre_destino}"
+            )
 
-                # Verificar si se generan dos componentes
-                if nx.number_weakly_connected_components(graph_temp) == 2:
-                    # Llamar a la función para encontrar todas las componentes
-                    components = self.find_components(graph_temp)
-                    for component in components:
-                        # Añadir nodo vacío si es necesario
-                        component_with_empty_node = self.add_empty_node(
-                            graph_temp, component
-                        )
-                        print("After removing edge", edge)
-                        print("Component:", component_with_empty_node)
-                        # Separar la componente en conjuntos de bipartite=0 y bipartite=1
-                        bipartite_0_set, bipartite_1_set = (
-                            self.separate_bipartite_components(
-                                graph_temp, component_with_empty_node
-                            )
-                        )
+            df = pd.DataFrame(
+                tabla_aux[nombre_destino][1:], columns=tabla_aux[nombre_destino][0]
+            )
+            st.dataframe(df)
 
-                        # Filtrar nodos vacíos
-                        bipartite_0_set = {
-                            node for node in bipartite_0_set if node != ""
-                        }
-                        bipartite_1_set = {
-                            node for node in bipartite_1_set if node != ""
-                        }
+            df = pd.DataFrame(
+                tablas_distribuidas[nombre_destino][1:],
+                columns=tablas_distribuidas[nombre_destino][0],
+            )
+            st.dataframe(df)
 
-                        # Obtener valores de los estados presentes para bipartite=0
-                        bipartite_0_values = tuple(
-                            state_values[bipartite_0_nodes.index(node)]
-                            for node in bipartite_0_set
-                        )
-
-                        # Llamar a la función para calcular la tabla de distribución
-
-                        # Convertir bipartite_0_set a lista
-                        bipartite_0_list = list(bipartite_0_set)
-
-                        # Eliminar ' de los nodos de bipartite=1
-                        bipartite_1_list = [node[:-1] for node in bipartite_1_set]
-
-                        print(
-                            "Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values
-                        )
-                        print("Bipartite=1 nodes:", bipartite_1_list)
-
-                        distribucionProbabilidades = (
-                            self.generarDistribucionProbabilidades(
-                                subconjunto_seleccionado,
-                                bipartite_0_list,
-                                bipartite_1_list,
-                                bipartite_0_values,
-                                listaNodos,
-                            )
-                        )
-
-                        print("\n", distribucionProbabilidades)
-
-                        # Calcular el producto tensor y su emd
-
-                        # --------------------------- Tu código va aquí ---------------------------
-
-                        # --------------------------- Hasta aquí ---------------------------
-
-                    break  # Detener el bucle si se encontraron dos componentes
+            nueva_distribucion = self.generarDistribucionProbabilidades(
+                subconjuntos, ep, ef, num, estados, tablas_distribuidas
+            )
+            if distribucionOriginal[1][1:] == nueva_distribucion[1][1:]:
+                tablas[nombre_destino] = tablas_distribuidas[nombre_destino]
+                arista.dashes, arista.color = True, "#00FF00"
+                emd = 0
             else:
-                # Si no se generaron dos componentes, agregar la arista a removed_edges
-                removed_edges.append(node_edges[0])
+                emd = wasserstein_distance(
+                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
+                )
 
-        # Si no se generaron dos componentes eliminando una arista por nodo, probar combinaciones de dos aristas
-        for combination in itertools.combinations(removed_edges, 2):
-            graph_temp = graph_copy.copy()
-            graph_temp.remove_edges_from(combination)
-            if nx.number_weakly_connected_components(graph_temp) == 2:
-                components = self.find_components(graph_temp)
-                for component in components:
-                    # Añadir nodo vacío si es necesario
-                    component_with_empty_node = self.add_empty_node(
-                        graph_temp, component
-                    )
-                    print("After removing edges", combination)
-                    print("Component:", component_with_empty_node)
-                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
-                    bipartite_0_set, bipartite_1_set = (
-                        self.separate_bipartite_components(
-                            graph_temp, component_with_empty_node
-                        )
-                    )
+            arista.label = str(emd)
 
-                    # Filtrar nodos vacíos
-                    bipartite_0_set = {node for node in bipartite_0_set if node != ""}
-                    bipartite_1_set = {node for node in bipartite_1_set if node != ""}
-
-                    # Obtener valores de los estados presentes para bipartite=0
-                    bipartite_0_values = tuple(
-                        state_values[bipartite_0_nodes.index(node)]
-                        for node in bipartite_0_set
-                    )
-
-                    # Llamar a la función para calcular la tabla de distribución
-
-                    # Convertir bipartite_0_set a lista
-                    bipartite_0_list = list(bipartite_0_set)
-
-                    # Eliminar ' de los nodos de bipartite=1
-                    bipartite_1_list = [node[:-1] for node in bipartite_1_set]
-
-                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
-                    print("Bipartite=1 nodes:", bipartite_1_list)
-
-                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
-                        subconjunto_seleccionado,
-                        bipartite_0_list,
-                        bipartite_1_list,
-                        bipartite_0_values,
-                        listaNodos,
-                    )
-
-                    print("\n", distribucionProbabilidades)
-
-                    # Calcular el producto tensor y su emd
-
-                    # --------------------------- Tu código va aquí ---------------------------
-
-                    # --------------------------- Hasta aquí ---------------------------
-
-
-# Probar cuando hay nodos con 3 aristas
-"""
-import networkx as nx
-import itertools
-
-def find_components(graph):
-    # Encontrar todas las componentes débilmente conectadas
-    components = list(nx.weakly_connected_components(graph))
-    return components
-
-def add_empty_node(graph, component):
-    # Encontrar nodos de la parte bipartita 0 en la componente
-    bipartite_0_nodes = [node for node in component if graph.nodes[node]["bipartite"] == 0]
-    
-    # Si no hay nodos de bipartite=0, no es necesario añadir un nodo vacío
-    if len(bipartite_0_nodes) == 0:
-        return component
-    
-    # Si hay nodos de bipartite=0 y solo queda uno en la componente, añadir un nodo vacío
-    if len(bipartite_0_nodes) == 1:
-        empty_node = ""
-        graph.add_node(empty_node, bipartite=0)
-        component.add(empty_node)
-    
-    return component
-
-def separate_bipartite_components(graph, component):
-    # Inicializar conjuntos de nodos de bipartite=0 y bipartite=1
-    bipartite_0_set = set()
-    bipartite_1_set = set()
-
-    # Separar la componente en conjuntos de nodos de bipartite=0 y bipartite=1
-    for node in component:
-        if graph.nodes[node]["bipartite"] == 0:
-            bipartite_0_set.add(node)
+    def quicksort(self, edges):
+        if len(edges) <= 1:
+            return edges
         else:
-            bipartite_1_set.add(node)
+            pivot = edges[0]
+            less_than_pivot = [
+                x for x in edges[1:] if float(x.label) <= float(pivot.label)
+            ]
+            greater_than_pivot = [
+                x for x in edges[1:] if float(x.label) > float(pivot.label)
+            ]
+            return (
+                self.quicksort(less_than_pivot)
+                + [pivot]
+                + self.quicksort(greater_than_pivot)
+            )
 
-    # Remover el nodo vacío del conjunto de bipartite=0 si existe
-    bipartite_0_set.discard("")
-
-    return bipartite_0_set, bipartite_1_set
-
-def remove_edges_and_check_components(graph, state_values, subconjunto_seleccionado, listaNodos):
-    # Crear una copia del grafo original
-    graph_copy = graph.copy()
-
-    # Inicializar la lista de aristas eliminadas
-    removed_edges = []
-
-    # Obtener nodos de bipartite=0
-    bipartite_0_nodes = [
-        node for node, attr in graph.nodes(data=True) if attr["bipartite"] == 0
-    ]
-
-    # Recorrer los nodos de bipartite=0
-    for node in bipartite_0_nodes:
-        # Obtener las aristas del nodo
-        node_edges = list(graph.edges(node))
-        for edge in node_edges:
-            # Eliminar una arista
-            graph_temp = graph_copy.copy()
-            graph_temp.remove_edge(*edge)
-
-            # Verificar si se generan dos componentes
-            if nx.number_weakly_connected_components(graph_temp) == 2:
-                # Llamar a la función para encontrar todas las componentes
-                components = find_components(graph_temp)
-                for component in components:
-                    # Añadir nodo vacío si es necesario
-                    component_with_empty_node = add_empty_node(
-                        graph_temp, component
-                    )
-                    print("After removing edge", edge)
-                    print("Component:", component_with_empty_node)
-                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
-                    bipartite_0_set, bipartite_1_set = separate_bipartite_components(
-                        graph_temp, component_with_empty_node
-                    )
-
-                    # Filtrar nodos vacíos
-                    bipartite_0_set = {node for node in bipartite_0_set if node != ''}
-                    bipartite_1_set = {node for node in bipartite_1_set if node != ''}
-
-                    # Obtener valores de los estados presentes para bipartite=0
-                    bipartite_0_values = tuple(
-                        state_values[bipartite_0_nodes.index(node)]
-                        for node in bipartite_0_set
-                    )
-
-                    # Llamar a la función para calcular la tabla de distribución
-
-                    # Convertir bipartite_0_set y bipartite_1_set a lista
-                    bipartite_0_list = list(bipartite_0_set)
-                    bipartite_1_list = list(bipartite_1_set)
-
-                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
-                    print("Bipartite=1 nodes:", bipartite_1_list)
-
-                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
-                        subconjunto_seleccionado,
-                        bipartite_0_list,
-                        bipartite_1_list,
-                        bipartite_0_values,
-                        listaNodos,
-                    )
-
-                    print(distribucionProbabilidades)
-
-            # Si no se generaron dos componentes, agregar la arista a removed_edges
-            else:
-                removed_edges.append(edge)
-
-    # Probar combinaciones incrementales de aristas
-    partition_found = False
-    for num_edges in range(2, len(removed_edges) + 1):
-        if partition_found:
-            break
-        for combination in itertools.combinations(removed_edges, num_edges):
-            graph_temp = graph_copy.copy()
-            graph_temp.remove_edges_from(combination)
-            if nx.number_weakly_connected_components(graph_temp) == 2:
-                partition_found = True
-                components = find_components(graph_temp)
-                for component in components:
-                    # Añadir nodo vacío si es necesario
-                    component_with_empty_node = add_empty_node(
-                        graph_temp, component
-                    )
-                    print("After removing edges", combination)
-                    print("Component:", component_with_empty_node)
-                    # Separar la componente en conjuntos de bipartite=0 y bipartite=1
-                    bipartite_0_set, bipartite_1_set = separate_bipartite_components(
-                        graph_temp, component_with_empty_node
-                    )
-
-                    # Filtrar nodos vacíos
-                    bipartite_0_set = {node for node in bipartite_0_set if node != ''}
-                    bipartite_1_set = {node for node in bipartite_1_set if node != ''}
-
-                    # Obtener valores de los estados presentes para bipartite=0
-                    bipartite_0_values = tuple(
-                        state_values[bipartite_0_nodes.index(node)]
-                        for node in bipartite_0_set
-                    )
-
-                    # Llamar a la función para calcular la tabla de distribución
-
-                    # Convertir bipartite_0_set y bipartite_1_set a lista
-                    bipartite_0_list = list(bipartite_0_set)
-                    bipartite_1_list = list(bipartite_1_set)
-
-                    print("Bipartite=0 nodes:", bipartite_0_list, bipartite_0_values)
-                    print("Bipartite=1 nodes:", bipartite_1_list)
-
-                    distribucionProbabilidades = self.generarDistribucionProbabilidades(
-                        subconjunto_seleccionado,
-                        bipartite_0_list,
-                        bipartite_1_list,
-                        bipartite_0_values,
-                        listaNodos,
-                    )
-
-                    print(distribucionProbabilidades)
-
-        # Si se encontró una partición, dejar de incrementar el número de aristas combinadas
-        if partition_found:
-            break
-
-"""
+    def menoresAristas(self, nodes, edges):
+        list, sol = st.session_state["G"].generarSubGrafoMinimo(
+            0, nodes, edges, 0, [], -1, [], {}
+        )
+        self.posicionate()
+        return list
