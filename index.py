@@ -393,7 +393,7 @@ if option == "Archivo":
                 st.session_state["copy_edges"] = copy_edges
 
             if len(st.session_state["nodes"]) > 1:
-                E.add_edge_to_graph(
+                edges, last_action, copy_edges = E.add_edge_to_graph(
                     "Agregar Arista",
                     st.session_state["graph"],
                     st.session_state["nodes"],
@@ -403,6 +403,10 @@ if option == "Archivo":
                     st.session_state["weighted"],
                     st.session_state["directed"],
                 )
+
+                st.session_state["edges"] = edges
+                st.session_state["last_action"] = last_action
+                st.session_state["copy_edges"] = copy_edges
 
         if graph_option == "Aleatorio":
 
