@@ -142,7 +142,6 @@ if option == "Ejecutar":
         st.write("Componentes conectados:")
         # Mostrar los componentes conectados con nombres de nodos
         for i, component in enumerate(components):
-            print(component)
             st.write(f"Componente {i + 1}: {component}")
 
     elif selected == "Estrategia 1":
@@ -164,7 +163,7 @@ if option == "Ejecutar":
             combinaciones_ep = U.generar_combinaciones(optionep, valorE)
             combinaciones_ef = U.generar_combinaciones(optionef)
 
-            res = U.encontrar_distribuciones_combinaciones(
+            best_partition, min_emd = U.encontrar_distribuciones_combinaciones(
                 combinaciones_ep,
                 combinaciones_ef,
                 distribucionProbabilidades,
@@ -172,28 +171,17 @@ if option == "Ejecutar":
                 listaNodos,
             )
 
-            possible_divisions = U.convertir_probabilidades_tuplas(res)
-
-            # Inicializar el mínimo y la mejor partición
-            min_emd = float("inf")
-            best_partition = None
-
-            # Encontrar la mejor partición
-            best_partition, min_emd = U.encontrar_mejor_particion(
-                distribucionProbabilidades[1][1:], possible_divisions
+            df0 = pd.DataFrame(
+                best_partition[0][0][1:], columns=best_partition[0][0][0]
             )
-
-            # Mostrar el resultado
-            print("La mejor partición es:", best_partition, "\n")
-            print("Con un EMD de:", min_emd, "\n")
-
-            df0 = pd.DataFrame(best_partition[0][1:], columns=best_partition[0][0])
-            df1 = pd.DataFrame(best_partition[1][1:], columns=best_partition[1][0])
+            df1 = pd.DataFrame(
+                best_partition[0][1][1:], columns=best_partition[0][1][0]
+            )
 
             col1, col2 = st.columns(2)
 
             with col1:
-                partes = best_partition[1][0][0].split("\\")
+                partes = best_partition[0][1][0][0].split("\\")
                 lista10 = ast.literal_eval(partes[0].strip())
                 lista20 = ast.literal_eval(partes[1].strip())
 
@@ -201,19 +189,19 @@ if option == "Ejecutar":
                 cadena20 = "".join(lista20)
 
                 st.write(
-                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {best_partition[1][1][0]})**"
+                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {best_partition[0][1][1][0]})**"
                 )
                 st.dataframe(df1)
 
             with col2:
-                partes = best_partition[0][0][0].split("\\")
+                partes = best_partition[0][0][0][0].split("\\")
                 lista11 = ast.literal_eval(partes[0].strip())
                 lista21 = ast.literal_eval(partes[1].strip())
 
                 cadena11 = "".join(lista11)
                 cadena21 = "".join(lista21)
                 st.write(
-                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {best_partition[0][1][0]})**"
+                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {best_partition[0][0][1][0]})**"
                 )
                 st.dataframe(df0)
 

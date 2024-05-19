@@ -391,164 +391,118 @@ class Utils:
 
         return best_partition, min_emd
 
-    # def encontrar_distribuciones_combinaciones(
-    #     self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
-    # ):
-    #     res = []
-    #     for combinacion_ep in combinaciones_ep:
-    #         for combinacion_ef in combinaciones_ef:
-    #             # Si hay un elemento en común, no se puede hacer la combinación
-    #             if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
-    #                 combinacion_ep[1]
-    #             ) & set(combinacion_ef[1]):
-    #                 continue
-
-    #             if (
-    #                 len(combinacion_ep[0]) == 0
-    #                 and len(combinacion_ef[0]) == 0
-    #                 or len(combinacion_ep[1]) == 0
-    #                 and len(combinacion_ef[1]) == 0
-    #             ):
-    #                 continue
-
-    #             res.append(
-    #                 self.generarDistribucionProbabilidades(
-    #                     subconjuntos,
-    #                     combinacion_ep[0],
-    #                     combinacion_ef[0],
-    #                     combinacion_ep[2],
-    #                     estados,
-    #                 )
-    #             )
-
-    #             res.append(
-    #                 self.generarDistribucionProbabilidades(
-    #                     subconjuntos,
-    #                     combinacion_ep[1],
-    #                     combinacion_ef[1],
-    #                     combinacion_ep[3],
-    #                     estados,
-    #                 )
-    #             )
-
-    #     for combinacion_ep in combinaciones_ep:
-    #         for combinacion_ef in combinaciones_ef:
-    #             # Si hay un elemento en común, no se puede hacer la combinación
-    #             if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
-    #                 combinacion_ep[1]
-    #             ) & set(combinacion_ef[0]):
-    #                 continue
-
-    #             if (
-    #                 len(combinacion_ep[0]) == 0
-    #                 and len(combinacion_ef[1]) == 0
-    #                 or len(combinacion_ep[1]) == 0
-    #                 and len(combinacion_ef[0]) == 0
-    #             ):
-    #                 continue
-
-    #             res.append(
-    #                 self.generarDistribucionProbabilidades(
-    #                     subconjuntos,
-    #                     combinacion_ep[0],
-    #                     combinacion_ef[1],
-    #                     combinacion_ep[2],
-    #                     estados,
-    #                 )
-    #             )
-
-    #             res.append(
-    #                 self.generarDistribucionProbabilidades(
-    #                     subconjuntos,
-    #                     combinacion_ep[1],
-    #                     combinacion_ef[0],
-    #                     combinacion_ep[3],
-    #                     estados,
-    #                 )
-    #             )
-
-    #     return res
-
     def encontrar_distribuciones_combinaciones(
         self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
     ):
-        res = []
-        memo = {}
-
-        def generarDistribucionProbabilidades_memo(
-            subconjuntos, comb_ep, comb_ef, ep_vals, estados
-        ):
-            key = (tuple(comb_ep), tuple(comb_ef), tuple(ep_vals))
-            if key not in memo:
-                memo[key] = self.generarDistribucionProbabilidades(
-                    subconjuntos, comb_ep, comb_ef, ep_vals, estados
-                )
-            return memo[key]
+        min_emd = float("inf")
+        best_partition = None
 
         for combinacion_ep in combinaciones_ep:
             for combinacion_ef in combinaciones_ef:
-                # Verificar si hay un elemento en común en ambos combinaciones
-                interseccion_00 = set(combinacion_ep[0]) & set(combinacion_ef[0])
-                interseccion_11 = set(combinacion_ep[1]) & set(combinacion_ef[1])
-                interseccion_01 = set(combinacion_ep[0]) & set(combinacion_ef[1])
-                interseccion_10 = set(combinacion_ep[1]) & set(combinacion_ef[0])
+                distribuciones = []
 
-                if not interseccion_00 and not interseccion_11:
-                    if len(combinacion_ep[0]) != 0 or len(combinacion_ef[0]) != 0:
-                        res.append(
-                            generarDistribucionProbabilidades_memo(
-                                subconjuntos,
-                                combinacion_ep[0],
-                                combinacion_ef[0],
-                                combinacion_ep[2],
-                                estados,
-                            )
-                        )
+                # Verificar si hay elementos en común
+                if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
+                    combinacion_ep[1]
+                ) & set(combinacion_ef[1]):
+                    continue
 
-                    if len(combinacion_ep[1]) != 0 or len(combinacion_ef[1]) != 0:
-                        res.append(
-                            generarDistribucionProbabilidades_memo(
-                                subconjuntos,
-                                combinacion_ep[1],
-                                combinacion_ef[1],
-                                combinacion_ep[3],
-                                estados,
-                            )
-                        )
+                # Verificar si alguna de las combinaciones es vacía
+                if (len(combinacion_ep[0]) == 0 and len(combinacion_ef[0]) == 0) or (
+                    len(combinacion_ep[1]) == 0 and len(combinacion_ef[1]) == 0
+                ):
+                    continue
 
-                if not interseccion_01 and not interseccion_10:
-                    if len(combinacion_ep[0]) != 0 or len(combinacion_ef[1]) != 0:
-                        res.append(
-                            generarDistribucionProbabilidades_memo(
-                                subconjuntos,
-                                combinacion_ep[0],
-                                combinacion_ef[1],
-                                combinacion_ep[2],
-                                estados,
-                            )
-                        )
+                # Generar las distribuciones de probabilidades
+                distribuciones.append(
+                    self.generarDistribucionProbabilidades(
+                        subconjuntos,
+                        combinacion_ep[0],
+                        combinacion_ef[0],
+                        combinacion_ep[2],
+                        estados,
+                    )
+                )
 
-                    if len(combinacion_ep[1]) != 0 or len(combinacion_ef[0]) != 0:
-                        res.append(
-                            generarDistribucionProbabilidades_memo(
-                                subconjuntos,
-                                combinacion_ep[1],
-                                combinacion_ef[0],
-                                combinacion_ep[3],
-                                estados,
-                            )
-                        )
+                distribuciones.append(
+                    self.generarDistribucionProbabilidades(
+                        subconjuntos,
+                        combinacion_ep[1],
+                        combinacion_ef[1],
+                        combinacion_ep[3],
+                        estados,
+                    )
+                )
 
-        # todo: calcular el emd de cada distribución y no calcularlo a todas al final
-        return res
+                possible_divisions = self.convertir_probabilidades_tuplas(
+                    distribuciones
+                )
+
+                emd = self.calculate_emd(original_system[1][1:], possible_divisions)
+
+                if emd == 0.0:
+                    return possible_divisions, emd
+
+                if emd < min_emd:
+                    min_emd = emd
+                    best_partition = possible_divisions
+
+                # Verificar si hay elementos en común (en el orden invertido)
+                if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
+                    combinacion_ep[1]
+                ) & set(combinacion_ef[0]):
+                    continue
+
+                # Verificar si alguna de las combinaciones es vacía (en el orden invertido)
+                if (len(combinacion_ep[0]) == 0 and len(combinacion_ef[1]) == 0) or (
+                    len(combinacion_ep[1]) == 0 and len(combinacion_ef[0]) == 0
+                ):
+                    continue
+
+                # Generar las distribuciones de probabilidades (en el orden invertido)
+                distribuciones.append(
+                    self.generarDistribucionProbabilidades(
+                        subconjuntos,
+                        combinacion_ep[0],
+                        combinacion_ef[1],
+                        combinacion_ep[2],
+                        estados,
+                    )
+                )
+
+                distribuciones.append(
+                    self.generarDistribucionProbabilidades(
+                        subconjuntos,
+                        combinacion_ep[1],
+                        combinacion_ef[0],
+                        combinacion_ep[3],
+                        estados,
+                    )
+                )
+
+                possible_divisions = self.convertir_probabilidades_tuplas(
+                    distribuciones
+                )
+
+                emd = self.calculate_emd(original_system[1][1:], possible_divisions)
+
+                if emd == 0.0:
+                    return possible_divisions, emd
+
+                if emd < min_emd:
+                    min_emd = emd
+                    best_partition = possible_divisions
+
+        return best_partition, min_emd
 
     def calculate_emd(self, original_system, system_partition):
         ##st.write(system_partition)
         divided_system = np.tensordot(
-            system_partition[0][1][1:], system_partition[1][1][1:], axes=0
+            system_partition[0][0][1][1:], system_partition[0][1][1][1:], axes=0
         ).flatten()
-
-        return wasserstein_distance(original_system, divided_system)
+        emd = wasserstein_distance(original_system, divided_system)
+        print(f"EMD: {emd}")
+        return emd
 
     def convertir_probabilidades_tuplas(self, datos):
         possible_divisions = []
