@@ -46,6 +46,7 @@ default_session_state = {
     "name_graph": "",
     "last_action": "a",
     "window": False,
+    "tables": {},
     "G": G,
 }
 
@@ -147,6 +148,8 @@ if option == "Ejecutar":
     elif selected == "Estrategia 1":
 
         subconjunto_seleccionado = U.select_subconjunto_UI()
+        ##st.session_state["window"] = False
+        st.session_state["tables"] = U.tablas(subconjunto_seleccionado)
 
         resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
         tablacomparativa = U.generarTablaDistribuida(resultado)
@@ -219,6 +222,8 @@ if option == "Ejecutar":
     elif selected == "Estrategia 2":
 
         subconjunto_seleccionado = U.select_subconjunto_UI()
+        st.session_state["tables"] = U.tablas(subconjunto_seleccionado)
+        ##st.session_state["window"] = False
 
         resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
         tablacomparativa = U.generarTablaDistribuida(resultado)
@@ -226,7 +231,6 @@ if option == "Ejecutar":
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
-
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
             )
@@ -236,7 +240,23 @@ if option == "Ejecutar":
                 return aristas
 
             st.session_state["edges"] = ordenar_por_destino(st.session_state["edges"])
-            U.estrategia2(
+            
+            def filtrarArista(ep, ef):
+                arista_eliminar = []
+                edges = st.session_state["edges"]
+                for arista in edges:
+                    nombre_origen, nombre_destino = (
+                        st.session_state["nodes"][arista.source].label,
+                        st.session_state["nodes"][arista.to].label[0],
+                    )
+                    if (nombre_origen not in ep or nombre_destino not in ef):
+                        arista_eliminar.append(arista)
+                st.session_state["edges"] = [arista for arista in edges if arista not in arista_eliminar]
+                        
+            filtrarArista(optionep, optionef)        
+            _, components = U.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
+            numcomponents = len(components)      
+            numcomponents = U.estrategia2(
                 st.session_state["edges"],
                 subconjunto_seleccionado,
                 listaNodos,
@@ -244,17 +264,8 @@ if option == "Ejecutar":
                 optionep,
                 optionef,
                 valorE,
+                numcomponents
             )
-            st.session_state["edges"] = U.quicksort(st.session_state["edges"])
-            lista = U.menoresAristas(
-                st.session_state["nodes"], st.session_state["edges"]
-            )
-
-            for i in st.session_state["edges"]:
-                if i in lista:
-                    i.dashes = True
-                    i.color = "#00FF00"
-
             ##U.posicionate()
 
 
@@ -407,6 +418,7 @@ if option == "Archivo":
                 st.session_state["edges"] = edges
                 st.session_state["last_action"] = last_action
                 st.session_state["copy_edges"] = copy_edges
+            U.posicionate()
 
         if graph_option == "Aleatorio":
 
@@ -417,6 +429,7 @@ if option == "Archivo":
             st.session_state["graph"] = graph
             st.session_state["last_action"] = last_action
             st.session_state["name_graph"] = name
+            U.posicionate()
 
 
 elif option == "Editar":

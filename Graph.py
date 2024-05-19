@@ -199,7 +199,6 @@ class Graph:
 
                     graph = True
                     last_action = "New Node"
-                    U.posicionate()
 
                 return nodes, edges, graph, last_action, name
 
@@ -250,7 +249,6 @@ class Graph:
             num = num + 2
 
         U.posicionate()
-
     def create_adjacency_list(self, nodes, edges):
         """
         Crea una lista de adyacencia a partir de los nodos y aristas dados.
@@ -412,6 +410,7 @@ class Graph:
         solucionActual,
         listaSolucionActual,
         nodedict,
+        numComponentes
     ):
         copiaEdges = edges.copy()
         copiaEdges = list(filter(lambda x: x not in listaSolucion, copiaEdges))
@@ -422,14 +421,11 @@ class Graph:
         if i >= len(edges):
             return listaSolucionActual, solucionActual
 
-        if esBipartito and (len(componentes) > 2):
-            return listaSolucionActual, solucionActual
-
-        if esBipartito and (len(componentes) == 2):
+        if esBipartito and (len(componentes) == numComponentes + 1):
             if (solucion <= solucionActual) or (solucionActual == -1):
                 return listaSolucion, solucion
 
-        elif esBipartito and (len(componentes) == 1):
+        elif esBipartito and (len(componentes) == numComponentes):
             copynodedict = nodedict.copy()
             copiaSolucion = solucion
 
@@ -459,6 +455,7 @@ class Graph:
                     solucionActual,
                     listaSolucionActual,
                     nodedict,
+                    numComponentes
                 )
                 listaSolucionActual, solucionActual = self.generarSubGrafoMinimo(
                     i + 1,
@@ -469,5 +466,6 @@ class Graph:
                     solucionActual,
                     listaSolucionActual,
                     copynodedict,
+                    numComponentes
                 )
         return listaSolucionActual, solucionActual
