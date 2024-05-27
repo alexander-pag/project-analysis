@@ -7,13 +7,11 @@ import copy
 import pyautogui as pg
 from Graph import Graph
 import pandas as pd
-from itertools import product
 import ast
-import networkx as nx
-import itertools
 from Node import MyNode
 from File import File
 from Edge import MyEdge
+import time
 
 st.set_page_config(
     page_title="Graph Editor",
@@ -156,6 +154,7 @@ if option == "Ejecutar":
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
+            start_time = time.time()
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
             )
@@ -207,6 +206,25 @@ if option == "Ejecutar":
 
             U.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
 
+            end_time = time.time()
+
+            total_time = end_time - start_time
+
+            st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
+            st.write("El emd es: ", min_emd)
+
+            # df = pd.DataFrame(
+            #     divided_system.reshape(
+            #         len(divided_system[0][0][1][1:]),
+            #         len(divided_system[0][1][1][1:]),
+            #     ),
+            #     columns=divided_system[0][1][0][1:],
+            #     index=divided_system[0][0][0][1:],
+            # )
+
+            # st.write("## **Distribución de probabilidades**")
+            # st.dataframe(df)
+
     elif selected == "Estrategia 2":
 
         subconjunto_seleccionado = U.select_subconjunto_UI()
@@ -228,7 +246,7 @@ if option == "Ejecutar":
                 return aristas
 
             st.session_state["edges"] = ordenar_por_destino(st.session_state["edges"])
-            
+
             def filtrarArista(ep, ef):
                 arista_eliminar = []
                 edges = st.session_state["edges"]
@@ -237,13 +255,17 @@ if option == "Ejecutar":
                         st.session_state["nodes"][arista.source].label,
                         st.session_state["nodes"][arista.to].label[0],
                     )
-                    if (nombre_origen not in ep or nombre_destino not in ef):
+                    if nombre_origen not in ep or nombre_destino not in ef:
                         arista_eliminar.append(arista)
-                st.session_state["edges"] = [arista for arista in edges if arista not in arista_eliminar]
-                        
-            filtrarArista(optionep, optionef)        
-            _, components = U.analyze_graph(st.session_state["nodes"], st.session_state["edges"])
-            numcomponents = len(components)      
+                st.session_state["edges"] = [
+                    arista for arista in edges if arista not in arista_eliminar
+                ]
+
+            filtrarArista(optionep, optionef)
+            _, components = U.analyze_graph(
+                st.session_state["nodes"], st.session_state["edges"]
+            )
+            numcomponents = len(components)
             numcomponents = U.estrategia2(
                 st.session_state["edges"],
                 subconjunto_seleccionado,
@@ -252,7 +274,7 @@ if option == "Ejecutar":
                 optionep,
                 optionef,
                 valorE,
-                numcomponents
+                numcomponents,
             )
             ##U.posicionate()
 

@@ -14,7 +14,7 @@ import itertools
 import numpy as np
 from scipy.stats import wasserstein_distance
 from tabulate import tabulate
-from states import Tres, Cuatro, Cinco
+from states import Tres, Cuatro, Cinco, Seis
 from itertools import product
 
 
@@ -71,9 +71,13 @@ class Utils:
             return Cuatro
         elif selected_subconjunto == "Cinco":
             return Cinco
+        elif selected_subconjunto == "Seis":
+            return Seis
 
     def select_subconjunto_UI(self):
-        option = st.radio("Selecciona un subconjunto:", ["Tres", "Cuatro", "Cinco"])
+        option = st.radio(
+            "Selecciona un subconjunto:", ["Tres", "Cuatro", "Cinco", "Seis"]
+        )
         return self.obtener_subconjunto(option)
 
     def strategies(self, tablacomparativa, listaNodos):
@@ -218,7 +222,8 @@ class Utils:
         tabla1 = [
             fila
             for fila in tabla
-            if all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
+            if len(fila[0]) >= max(posiciones, default=-1) + 1
+            and all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
         ]
 
         valores = [0, 0]
@@ -316,6 +321,7 @@ class Utils:
     #                 tupla_subconjunto,
     #                 tupla_complemento,
     #             ]
+
     #             combinacion_invertida = [
     #                 sorted(list(complemento)),  # Ordenar los elementos del complemento
     #                 sorted(list(subconjunto)),  # Ordenar los elementos del subconjunto
@@ -495,6 +501,108 @@ class Utils:
 
         return best_partition, min_emd
 
+    # def encontrar_distribuciones_combinaciones(
+    #     self, combinaciones_ep, combinaciones_ef, original_system, subconjuntos, estados
+    # ):
+    #     res = []
+    #     min_emd = float("inf")
+    #     best_partition = None
+    #     for combinacion_ep in combinaciones_ep:
+    #         for combinacion_ef in combinaciones_ef:
+    #             # Si hay un elemento en común, no se puede hacer la combinación
+    #             if set(combinacion_ep[0]) & set(combinacion_ef[0]) or set(
+    #                 combinacion_ep[1]
+    #             ) & set(combinacion_ef[1]):
+    #                 continue
+
+    #             if (
+    #                 len(combinacion_ep[0]) == 0
+    #                 and len(combinacion_ef[0]) == 0
+    #                 or len(combinacion_ep[1]) == 0
+    #                 and len(combinacion_ef[1]) == 0
+    #             ):
+    #                 continue
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[0],
+    #                     combinacion_ef[0],
+    #                     combinacion_ep[2],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[1],
+    #                     combinacion_ef[1],
+    #                     combinacion_ep[3],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             possible_divisions = self.convertir_probabilidades_tuplas(res)
+
+    #             emd = self.calculate_emd(original_system[1][1:], possible_divisions)
+
+    #             if emd == 0.0:
+    #                 return possible_divisions, emd
+
+    #             if emd < min_emd:
+    #                 min_emd = emd
+    #                 best_partition = possible_divisions
+    #                 res = []
+
+    #     for combinacion_ep in combinaciones_ep:
+    #         for combinacion_ef in combinaciones_ef:
+    #             # Si hay un elemento en común, no se puede hacer la combinación
+    #             if set(combinacion_ep[0]) & set(combinacion_ef[1]) or set(
+    #                 combinacion_ep[1]
+    #             ) & set(combinacion_ef[0]):
+    #                 continue
+
+    #             if (
+    #                 len(combinacion_ep[0]) == 0
+    #                 and len(combinacion_ef[1]) == 0
+    #                 or len(combinacion_ep[1]) == 0
+    #                 and len(combinacion_ef[0]) == 0
+    #             ):
+    #                 continue
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[0],
+    #                     combinacion_ef[1],
+    #                     combinacion_ep[2],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             res.append(
+    #                 self.generarDistribucionProbabilidades(
+    #                     subconjuntos,
+    #                     combinacion_ep[1],
+    #                     combinacion_ef[0],
+    #                     combinacion_ep[3],
+    #                     estados,
+    #                 )
+    #             )
+
+    #             emd = self.calculate_emd(original_system[1][1:], possible_divisions)
+
+    #             if emd == 0.0:
+    #                 return possible_divisions, emd
+
+    #             if emd < min_emd:
+    #                 min_emd = emd
+    #                 best_partition = possible_divisions
+    #                 res = []
+
+    #     return best_partition, min_emd
+
     def calculate_emd(self, original_system, system_partition):
         ##st.write(system_partition)
         divided_system = np.tensordot(
@@ -659,8 +767,18 @@ class Utils:
                 )
 
         return nueva_tabla
-    
-    def estrategia2(self, edges, subconjuntos, estados, distribucionOriginal, ep, ef, num, numcomponentes):
+
+    def estrategia2(
+        self,
+        edges,
+        subconjuntos,
+        estados,
+        distribucionOriginal,
+        ep,
+        ef,
+        num,
+        numcomponentes,
+    ):
         tablas = st.session_state["tables"]
         particion, copiaEdges = False, edges.copy()
         for arista in edges:
@@ -668,30 +786,39 @@ class Utils:
             nombre_destino = st.session_state["nodes"][arista.to].label[0]
 
             indice = estados.index(nombre_origen)
-            tablas_distribuidas = {nombre_destino: self.expandirTabla(tablas[nombre_destino], indice)}
+            tablas_distribuidas = {
+                nombre_destino: self.expandirTabla(tablas[nombre_destino], indice)
+            }
 
-            nueva_distribucion = self.generarDistribucionProbabilidades(subconjuntos, ep, ef, num, estados, tablas_distribuidas)
+            nueva_distribucion = self.generarDistribucionProbabilidades(
+                subconjuntos, ep, ef, num, estados, tablas_distribuidas
+            )
 
             if distribucionOriginal[1][1:] == nueva_distribucion[1][1:]:
                 tablas[nombre_destino] = tablas_distribuidas[nombre_destino]
                 arista.dashes, arista.color = True, "#00FF00"
                 arista.label = str(0)
                 copiaEdges.remove(arista)
-                _, componentes = self.analyze_graph(st.session_state["nodes"], copiaEdges)
+                _, componentes = self.analyze_graph(
+                    st.session_state["nodes"], copiaEdges
+                )
                 if len(componentes) > numcomponentes:
                     particion = True
                     break
             else:
-                emd = wasserstein_distance(distribucionOriginal[1][1:], nueva_distribucion[1][1:])
+                emd = wasserstein_distance(
+                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
+                )
                 arista.label = str(emd)
         if not particion:
             st.session_state["edges"] = self.quicksort(st.session_state["edges"])
-            lista = self.menoresAristas(st.session_state["nodes"], st.session_state["edges"], numcomponentes)
+            lista = self.menoresAristas(
+                st.session_state["nodes"], st.session_state["edges"], numcomponentes
+            )
             for edge in st.session_state["edges"]:
                 if edge in lista:
                     edge.dashes = True
                     edge.color = "#00FF00"
-                
 
     def quicksort(self, edges):
         if len(edges) <= 1:
@@ -716,12 +843,10 @@ class Utils:
         )
         ##self.posicionate()
         return list
-    
+
     def tablas(self, subconjuntos):
         tabla = {}
         for key, value in subconjuntos.items():
             tabla[key] = self.generarTablaComparativa(value)
-        
+
         return tabla
-            
-        
