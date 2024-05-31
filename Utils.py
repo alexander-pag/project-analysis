@@ -768,53 +768,36 @@ class Utils:
 
         return nueva_tabla
 
-    def estrategia2(
-        self,
-        edges,
-        subconjuntos,
-        estados,
-        distribucionOriginal,
-        ep,
-        ef,
-        num,
-        numcomponentes,
-    ):
-        tablas = st.session_state["tables"]
+    def estrategia2(self, edges, subconjuntos, estados, distribucionOriginal, ep, ef, num, numcomponentes):
+        ##tablas = st.session_state["tables"]
+        tablas = {}
+        for key, value in subconjuntos.items():
+            tablas[key] = self.generarTablaComparativa(value)
         particion, copiaEdges = False, edges.copy()
         for arista in edges:
             nombre_origen = st.session_state["nodes"][arista.source].label
             nombre_destino = st.session_state["nodes"][arista.to].label[0]
 
             indice = estados.index(nombre_origen)
-            tablas_distribuidas = {
-                nombre_destino: self.expandirTabla(tablas[nombre_destino], indice)
-            }
+            tablas_distribuidas = {nombre_destino: self.expandirTabla(tablas[nombre_destino], indice)}
 
-            nueva_distribucion = self.generarDistribucionProbabilidades(
-                subconjuntos, ep, ef, num, estados, tablas_distribuidas
-            )
+            nueva_distribucion = self.generarDistribucionProbabilidades(subconjuntos, ep, ef, num, estados, tablas_distribuidas)
 
             if distribucionOriginal[1][1:] == nueva_distribucion[1][1:]:
                 tablas[nombre_destino] = tablas_distribuidas[nombre_destino]
                 arista.dashes, arista.color = True, "#00FF00"
                 arista.label = str(0)
                 copiaEdges.remove(arista)
-                _, componentes = self.analyze_graph(
-                    st.session_state["nodes"], copiaEdges
-                )
+                _, componentes = self.analyze_graph(st.session_state["nodes"], copiaEdges)
                 if len(componentes) > numcomponentes:
                     particion = True
                     break
             else:
-                emd = wasserstein_distance(
-                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
-                )
+                emd = wasserstein_distance(distribucionOriginal[1][1:], nueva_distribucion[1][1:])
                 arista.label = str(emd)
         if not particion:
             st.session_state["edges"] = self.quicksort(st.session_state["edges"])
-            lista = self.menoresAristas(
-                st.session_state["nodes"], st.session_state["edges"], numcomponentes
-            )
+            lista = self.menoresAristas(st.session_state["nodes"], st.session_state["edges"], numcomponentes)
             for edge in st.session_state["edges"]:
                 if edge in lista:
                     edge.dashes = True
