@@ -159,28 +159,37 @@ if option == "Ejecutar":
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
             )
 
-            combinaciones_ep = U.generar_combinaciones(optionep, valorE)
-            combinaciones_ef = U.generar_combinaciones(optionef)
+            # st.write(distribucionProbabilidades[1][1:])
 
-            best_partition, min_emd = U.encontrar_distribuciones_combinaciones(
-                combinaciones_ep,
-                combinaciones_ef,
-                distribucionProbabilidades,
+            print(distribucionProbabilidades[1][1:])
+
+            # Función principal
+            max_iteraciones = 10
+            mejor_particion, mejor_costo, r1, r2 = U.busqueda_local_emd(
+                optionep,
+                optionef,
+                valorE,
+                max_iteraciones,
                 subconjunto_seleccionado,
                 listaNodos,
+                distribucionProbabilidades,
             )
+            print("Mejor partición encontrada:")
+            print(mejor_particion)
+            print(f"Mejor costo (EMD): {mejor_costo}")
 
-            df0 = pd.DataFrame(
-                best_partition[0][0][1:], columns=best_partition[0][0][0]
-            )
-            df1 = pd.DataFrame(
-                best_partition[0][1][1:], columns=best_partition[0][1][0]
-            )
+            print("////////////////////////////////////////")
+            print(r1)
+            print(r2)
+
+            # Convertir r1 y r2 a DataFrame
+            df_r1 = U.crear_dataframe(r1)
+            df_r2 = U.crear_dataframe(r2)
 
             col1, col2 = st.columns(2)
 
             with col1:
-                partes = best_partition[0][1][0][0].split("\\")
+                partes = r1[0][0].split("\\")
                 lista10 = ast.literal_eval(partes[0].strip())
                 lista20 = ast.literal_eval(partes[1].strip())
 
@@ -188,21 +197,21 @@ if option == "Ejecutar":
                 cadena20 = "".join(lista20)
 
                 st.write(
-                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {best_partition[0][1][1][0]})**"
+                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {r1[1][0]})**"
                 )
-                st.dataframe(df1)
+                st.dataframe(df_r1)
 
             with col2:
-                partes = best_partition[0][0][0][0].split("\\")
+                partes = r2[0][0].split("\\")
                 lista11 = ast.literal_eval(partes[0].strip())
                 lista21 = ast.literal_eval(partes[1].strip())
 
                 cadena11 = "".join(lista11)
                 cadena21 = "".join(lista21)
                 st.write(
-                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {best_partition[0][0][1][0]})**"
+                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {r2[1][0]})**"
                 )
-                st.dataframe(df0)
+                st.dataframe(df_r2)
 
             U.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
 
@@ -211,19 +220,7 @@ if option == "Ejecutar":
             total_time = end_time - start_time
 
             st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
-            st.write("El emd es: ", min_emd)
-
-            # df = pd.DataFrame(
-            #     divided_system.reshape(
-            #         len(divided_system[0][0][1][1:]),
-            #         len(divided_system[0][1][1][1:]),
-            #     ),
-            #     columns=divided_system[0][1][0][1:],
-            #     index=divided_system[0][0][0][1:],
-            # )
-
-            # st.write("## **Distribución de probabilidades**")
-            # st.dataframe(df)
+            st.write("El emd es: ", mejor_costo)
 
     elif selected == "Estrategia 2":
 
@@ -234,10 +231,13 @@ if option == "Ejecutar":
         resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
         tablacomparativa = U.generarTablaDistribuida(resultado)
 
+        print("#############", listaNodos)
+
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
-            inicio = time.time()
+            start_time = time.time()
+
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
             )
@@ -277,15 +277,13 @@ if option == "Ejecutar":
                 valorE,
                 numcomponents,
             )
-            
-            fin = time.time()
-            for i in st.session_state["edges"]:
-                i.label = ""
-            
-            st.write(f"Valor de perdida: {numcomponents}")
-            st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
-            
             ##U.posicionate()
+
+            end_time = time.time()
+
+            total_time = end_time - start_time
+
+            st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
 
 
 if option == "Archivo":

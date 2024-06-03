@@ -172,26 +172,42 @@ class Utils:
         return is_bipartite, components
 
     ## TALLER 3
-    def generarDistribucionProbabilidades(
-        self, tabla, ep, ef, num, estados, tablasCreadas={}
-    ):
+    def generarDistribucionProbabilidades(self, tabla, ep, ef, num, estados):
         ep_index = [estados.index(i) for i in ep]
         probabilidadesDistribuidas = []
 
         for i in ef:
-            if i in tablasCreadas:
-                nueva_tabla = tablasCreadas[i]
-            else:
-                nueva_tabla = st.session_state["tables"][i]
+            nueva_tabla = self.generarTablaComparativa(tabla[i])
             filtro2 = self.porcentajeDistribuido(nueva_tabla, ep_index, num)
 
             probabilidadesDistribuidas.append(filtro2)
 
-        tabla = self.generarTabla(probabilidadesDistribuidas, num)
-        tabla[0] = [f"{ep} \ {ef}"] + tabla[0]
-        tabla[1] = [num] + tabla[1]
+        tabla_final = self.generarTabla(probabilidadesDistribuidas, num)
+        tabla_final[0] = [f"{ep} \ {ef}"] + tabla_final[0]
+        tabla_final[1] = [num] + tabla_final[1]
 
-        return tabla
+        return tabla_final
+
+    # def generarDistribucionProbabilidades(
+    #     self, tabla, ep, ef, num, estados, tablasCreadas={}
+    # ):
+    #     ep_index = [estados.index(i) for i in ep]
+    #     probabilidadesDistribuidas = []
+
+    #     for i in ef:
+    #         if i in tablasCreadas:
+    #             nueva_tabla = tablasCreadas[i]
+    #         else:
+    #             nueva_tabla = st.session_state["tables"][i]
+    #         filtro2 = self.porcentajeDistribuido(nueva_tabla, ep_index, num)
+
+    #         probabilidadesDistribuidas.append(filtro2)
+
+    #     tabla = self.generarTabla(probabilidadesDistribuidas, num)
+    #     tabla[0] = [f"{ep} \ {ef}"] + tabla[0]
+    #     tabla[1] = [num] + tabla[1]
+
+    #     return tabla
 
     def generarTabla(
         self, distribucionProbabilidades, num, i=0, binario="", nuevo_valor=1
@@ -217,32 +233,85 @@ class Utils:
             )
             return [tabla1[0] + tabla2[0], tabla1[1] + tabla2[1]]
 
+    # def generarTabla(
+    #     self, distribucionProbabilidades, num, i=0, binario="", nuevo_valor=1
+    # ):
+    #     if i == len(distribucionProbabilidades):
+    #         binario = "0" * (len(distribucionProbabilidades) - len(binario)) + binario
+    #         nueva_tupla = tuple(int(bit) for bit in binario)
+    #         return [[nueva_tupla], [nuevo_valor]]
+    #     else:
+    #         tabla1 = self.generarTabla(
+    #             distribucionProbabilidades,
+    #             num,
+    #             i + 1,
+    #             binario + "0",
+    #             nuevo_valor * distribucionProbabilidades[i][1][2],
+    #         )
+    #         tabla2 = self.generarTabla(
+    #             distribucionProbabilidades,
+    #             num,
+    #             i + 1,
+    #             binario + "1",
+    #             nuevo_valor * distribucionProbabilidades[i][1][1],
+    #         )
+    #         return [tabla1[0] + tabla2[0], tabla1[1] + tabla2[1]]
+
     def porcentajeDistribuido(self, tabla, posiciones, num):
         nueva_tabla = [tabla[0]]
-        tabla1 = [
+        tabla_filtrada = [
             fila
-            for fila in tabla
-            if len(fila[0]) >= max(posiciones, default=-1) + 1
-            and all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
+            for fila in tabla[1:]
+            if all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
         ]
 
         valores = [0, 0]
-        for fila in tabla1:
-            valor1 = (
-                fila[1] if isinstance(fila[1], float) else fila[1][0]
-            )  # Asegurar que sea un número
-            valor2 = (
-                fila[2] if isinstance(fila[2], float) else fila[2][0]
-            )  # Asegurar que sea un número
+        for fila in tabla_filtrada:
+            valor1 = fila[1]
+            valor2 = fila[2]
             valores[0] += valor1
             valores[1] += valor2
 
-        valores = [valor / len(tabla1) for valor in valores]
+        valores = [valor / len(tabla_filtrada) for valor in valores]
 
         nueva_fila = [num, *valores]
         nueva_tabla.append(nueva_fila)
 
         return nueva_tabla
+
+    # def porcentajeDistribuido(self, tabla, posiciones, num):
+    #     nueva_tabla = [tabla[0]]
+    #     tabla1 = [
+    #         fila
+    #         for fila in tabla
+    #         if len(fila[0]) >= max(posiciones, default=-1) + 1
+    #         and all(fila[0][pos] == num[i] for i, pos in enumerate(posiciones))
+    #     ]
+
+    #     valores = [0, 0]
+    #     for fila in tabla1:
+    #         valor1 = (
+    #             fila[1] if isinstance(fila[1], float) else fila[1][0]
+    #         )  # Asegurar que sea un número
+    #         valor2 = (
+    #             fila[2] if isinstance(fila[2], float) else fila[2][0]
+    #         )  # Asegurar que sea un número
+    #         valores[0] += valor1
+    #         valores[1] += valor2
+
+    #     valores = [valor / len(tabla1) for valor in valores]
+
+    #     nueva_fila = [num, *valores]
+    #     nueva_tabla.append(nueva_fila)
+
+    #     return nueva_tabla
+
+    def generarTablaComparativa(self, diccionario):
+        lista = [["Llave", (1,), (0,)]]
+        for key, value in diccionario.items():
+            lista.append([key, value, 1 - value])
+
+        return lista
 
     def generarTablaDistribuida(self, diccionario):
         # Obtener todas las llaves únicas
@@ -258,12 +327,12 @@ class Utils:
 
         return matriz
 
-    def generarTablaComparativa(self, diccionario):
-        lista = [["Llave", (1,), (0,)]]
-        for key, value in diccionario.items():
-            lista.append([key, float(value), float(1 - value)])
+    # def generarTablaComparativa(self, diccionario):
+    #     lista = [["Llave", (1,), (0,)]]
+    #     for key, value in diccionario.items():
+    #         lista.append([key, float(value), float(1 - value)])
 
-        return lista
+    #     return lista
 
     def generate_state_transitions(self, subconjuntos):
         estados = list(subconjuntos.keys())
@@ -285,6 +354,27 @@ class Utils:
 
         helper(0)
         return transiciones, estados
+
+    # def generate_state_transitions(self, subconjuntos):
+    #     estados = list(subconjuntos.keys())
+    #     transiciones = {}
+    #     estado_actual = [0] * len(estados)
+
+    #     def helper(i):
+    #         if i == len(estados):
+    #             estado_actual_tuple = tuple(estado_actual)
+    #             estado_futuro = tuple(
+    #                 subconjuntos[estado][estado_actual_tuple] for estado in estados
+    #             )
+    #             transiciones[estado_actual_tuple] = estado_futuro
+    #         else:
+    #             estado_actual[i] = 0
+    #             helper(i + 1)
+    #             estado_actual[i] = 1
+    #             helper(i + 1)
+
+    #     helper(0)
+    #     return transiciones, estados
 
     # def generar_combinaciones(self, elementos, valores=None, memo=None):
     #     if memo is None:
@@ -608,6 +698,9 @@ class Utils:
         divided_system = np.tensordot(
             system_partition[0][0][1][1:], system_partition[0][1][1][1:], axes=0
         ).flatten()
+
+        # print(divided_system)
+
         emd = wasserstein_distance(original_system, divided_system)
         print(f"EMD: {emd}")
         return emd
@@ -616,9 +709,9 @@ class Utils:
         possible_divisions = []
         for i, table in enumerate(datos):
 
-            print(f"\nTabla {i + 1}:")
-            df = pd.DataFrame(table[1:], columns=table[0])
-            print("\n", tabulate(df.values, headers=df.columns, tablefmt="grid"))
+            # print(f"\nTabla {i + 1}:")
+            # df = pd.DataFrame(table[1:], columns=table[0])
+            # print("\n", tabulate(df.values, headers=df.columns, tablefmt="grid"))
 
             possible_divisions.append(table)
 
@@ -768,67 +861,57 @@ class Utils:
 
         return nueva_tabla
 
-    def estrategia2(self, edges, subconjuntos, estados, distribucionOriginal, ep, ef, num, numcomponentes):
-        ##tablas = st.session_state["tables"]
-        sol = 0
-        tablas = {}
-        for key, value in subconjuntos.items():
-            tablas[key] = self.generarTablaComparativa(value)
+    def estrategia2(
+        self,
+        edges,
+        subconjuntos,
+        estados,
+        distribucionOriginal,
+        ep,
+        ef,
+        num,
+        numcomponentes,
+    ):
+        tablas = st.session_state["tables"]
         particion, copiaEdges = False, edges.copy()
-        
         for arista in edges:
-            tablasCopy = copy.deepcopy(tablas)
             nombre_origen = st.session_state["nodes"][arista.source].label
             nombre_destino = st.session_state["nodes"][arista.to].label[0]
-            
-            '''
-            st.write(f"Se elimina la arista de {nombre_origen} -----------> {nombre_destino}")
-            for i in tablas:
-                st.write(f"## **{i}**")
-                df = pd.DataFrame(
-                tablas[i][1:], columns=tablas[i][0]
-                )
-
-                st.dataframe(df)
-            '''
-            
 
             indice = estados.index(nombre_origen)
-            tablas_distribuidas = {nombre_destino: self.expandirTabla(tablasCopy[nombre_destino], indice)}
+            tablas_distribuidas = {
+                nombre_destino: self.expandirTabla(tablas[nombre_destino], indice)
+            }
 
-            nueva_distribucion = self.generarDistribucionProbabilidades(subconjuntos, ep, ef, num, estados, tablas_distribuidas)
-            
+            nueva_distribucion = self.generarDistribucionProbabilidades(
+                subconjuntos, ep, ef, num, estados, tablas_distribuidas
+            )
+
             if distribucionOriginal[1][1:] == nueva_distribucion[1][1:]:
                 tablas[nombre_destino] = tablas_distribuidas[nombre_destino]
-                arista.dashes, arista.color = True, "#FFFFFF"
+                arista.dashes, arista.color = True, "#00FF00"
                 arista.label = str(0)
-                #st.write("0")
                 copiaEdges.remove(arista)
-                _, componentes = self.analyze_graph(st.session_state["nodes"], copiaEdges)
+                _, componentes = self.analyze_graph(
+                    st.session_state["nodes"], copiaEdges
+                )
                 if len(componentes) > numcomponentes:
                     particion = True
                     break
             else:
-                emd = wasserstein_distance(distribucionOriginal[1][1:], nueva_distribucion[1][1:])
+                emd = wasserstein_distance(
+                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
+                )
                 arista.label = str(emd)
-                #st.write(arista.label)
-        
-            ##df = pd.DataFrame(
-            ##    nueva_distribucion[1:], columns=nueva_distribucion[0]
-            ##)
-
-            ##st.dataframe(df)
-                
         if not particion:
             st.session_state["edges"] = self.quicksort(st.session_state["edges"])
-            lista, sol = self.menoresAristas(st.session_state["nodes"], st.session_state["edges"], numcomponentes)
+            lista = self.menoresAristas(
+                st.session_state["nodes"], st.session_state["edges"], numcomponentes
+            )
             for edge in st.session_state["edges"]:
                 if edge in lista:
                     edge.dashes = True
-                    if edge.label != '0':                    
-                        edge.color = "#FF0000"
-        
-        return sol
+                    edge.color = "#00FF00"
 
     def quicksort(self, edges):
         if len(edges) <= 1:
@@ -852,7 +935,7 @@ class Utils:
             0, nodes, edges, 0, [], -1, [], {}, numComponentes
         )
         ##self.posicionate()
-        return list, sol
+        return list
 
     def tablas(self, subconjuntos):
         tabla = {}
@@ -860,3 +943,132 @@ class Utils:
             tabla[key] = self.generarTablaComparativa(value)
 
         return tabla
+
+    # Función para generar una partición inicial aleatoria
+
+    def generar_particion_aleatoria(
+        self, estados_presentes, estados_futuros, valores_estados_presentes
+    ):
+        ep1 = list([])
+        ef1 = list(estados_futuros[0])
+        vp1 = list([])
+        ep2 = list(estados_presentes)
+        ef2 = list(estados_futuros[1:])
+        vp2 = list(valores_estados_presentes)
+
+        return (ep1, ef1, vp1, ep2, ef2, vp2)
+
+    # Función para calcular el costo de una partición
+    def calcular_costo(self, particion, subconjunto, original, listaNodos):
+        ep1, ef1, vp1, ep2, ef2, vp2 = particion
+        r1 = self.generarDistribucionProbabilidades(
+            subconjunto, ep1, ef1, vp1, listaNodos
+        )
+        r2 = self.generarDistribucionProbabilidades(
+            subconjunto, ep2, ef2, vp2, listaNodos
+        )
+
+        # print("Particion: ", particion, "R1: ", r1, "R2: ", r2)
+
+        tensor = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
+
+        emd = wasserstein_distance(original[1][1:], tensor)
+        print("Particion: ", particion, "EMD: ", emd)
+        return emd, r1, r2
+
+    # Función para generar una nueva partición a partir de una partición dada
+    def generar_vecino(self, particion, estados_futuros, num, fase):
+        ep1, ef1, vp1, ep2, ef2, vp2 = particion
+
+        # intercambiar elemento entre ef1 y ef2
+        if fase < len(estados_futuros) - 1:
+            ef1.append(ef2.pop(0))
+            ef2.append(ef1.pop(0))
+        elif fase <= num - 2:
+            # intercambiar elementos entre ep1 y ep2
+            if len(ep1) == 0:
+                ef2.append(ef1.pop(0))
+                ep1.append(ep2.pop(0))
+                vp1.append(vp2.pop(0))
+            else:
+                ep1.append(ep2.pop(0))
+                ep2.append(ep1.pop(0))
+                vp1.append(vp2.pop(0))
+                vp2.append(vp1.pop(0))
+        else:
+            if len(ef1) == 0:
+                ef1.append(ef2.pop(0))
+                ep1.append(ep2.pop(0))
+                vp1.append(vp2.pop(0))
+                ep2.append(ep1.pop(0))
+                vp2.append(vp1.pop(0))
+            else:
+                ep2.append(ep1.pop(0))
+                ep1.append(ep2.pop(0))
+                vp1.append(vp2.pop(0))
+                vp2.append(vp1.pop(0))
+
+        return (ep1, ef1, vp1, ep2, ef2, vp2)
+
+    # Algoritmo de Búsqueda Local con EMD y Programación Dinámica
+    def busqueda_local_emd(
+        self,
+        estados_presentes,
+        estados_futuros,
+        valores_estados_presentes,
+        max_iteraciones,
+        subconjunto,
+        listaNodos,
+        original_system,
+    ):
+        mejor_particion = self.generar_particion_aleatoria(
+            estados_presentes, estados_futuros, valores_estados_presentes
+        )
+        mejor_costo, r1, r2 = self.calcular_costo(
+            mejor_particion, subconjunto, original_system, listaNodos
+        )
+        iteraciones_sin_mejora = 0
+        num = len(estados_presentes) + len(estados_futuros)
+        particiones_visitadas = set()
+        particiones_visitadas.add(tuple(map(tuple, mejor_particion)))
+
+        # ya que puede ser que la primera particion de 0, entonces se termina
+        if mejor_costo == 0.0:
+            return mejor_particion, mejor_costo, r1, r2
+
+        while iteraciones_sin_mejora < max_iteraciones:
+            vecino = self.generar_vecino(
+                mejor_particion, estados_futuros, num, iteraciones_sin_mejora
+            )
+            vecino_tuple = tuple(map(tuple, vecino))
+
+            if vecino_tuple in particiones_visitadas:
+                iteraciones_sin_mejora += 1
+                continue
+
+            particiones_visitadas.add(vecino_tuple)
+            costo_vecino, r1, r2 = self.calcular_costo(
+                vecino, subconjunto, original_system, listaNodos
+            )
+
+            # Terminar si se encuentra un costo EMD de 0
+            if costo_vecino == 0.0:
+                return vecino, costo_vecino, r1, r2
+
+            if costo_vecino < mejor_costo:
+                mejor_particion = vecino
+                mejor_costo = costo_vecino
+                iteraciones_sin_mejora = 0
+            else:
+                iteraciones_sin_mejora += 1
+
+        return mejor_particion, mejor_costo, r1, r2
+
+    def normalizar_lista(self, lista):
+        # Convertir todos los elementos a cadenas de texto
+        return [[str(element) for element in sublist] for sublist in lista]
+
+    def crear_dataframe(self, r):
+        normalizado = self.normalizar_lista(r)
+        df = pd.DataFrame(normalizado)
+        return df
