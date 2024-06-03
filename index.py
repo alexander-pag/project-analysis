@@ -237,6 +237,7 @@ if option == "Ejecutar":
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
+            inicio = time.time()
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
             )
@@ -276,6 +277,14 @@ if option == "Ejecutar":
                 valorE,
                 numcomponents,
             )
+            
+            fin = time.time()
+            for i in st.session_state["edges"]:
+                i.label = ""
+            
+            st.write(f"Valor de perdida: {numcomponents}")
+            st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
+            
             ##U.posicionate()
 
 
