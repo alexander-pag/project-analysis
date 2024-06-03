@@ -236,7 +236,7 @@ if option == "Ejecutar":
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
-            start_time = time.time()
+            inicio = time.time()
 
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
@@ -279,12 +279,12 @@ if option == "Ejecutar":
             )
             ##U.posicionate()
 
-            end_time = time.time()
-
-            total_time = end_time - start_time
-
-            st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
-
+            fin = time.time()
+            for i in st.session_state["edges"]:
+                i.label = ""
+            
+            st.write(f"Valor de perdida: {numcomponents}")
+            st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
 
 if option == "Archivo":
     st.session_state["window"] = False
