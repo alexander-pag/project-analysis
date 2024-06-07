@@ -6,11 +6,13 @@ from Utils import Utils
 import copy
 import pyautogui as pg
 from Graph import Graph
-import pandas as pd
 import ast
 from Node import MyNode
 from File import File
 from Edge import MyEdge
+from First_Strategy import FirstStrategy
+from Second_Strategy import SecondStrategy
+from Probabilities import Probabilities
 import time
 
 st.set_page_config(
@@ -25,6 +27,9 @@ G = Graph()
 N = MyNode()
 F = File()
 E = MyEdge()
+E1 = FirstStrategy()
+E2 = SecondStrategy()
+P = Probabilities()
 
 css = U.load_css()
 st.markdown(css, unsafe_allow_html=True)
@@ -124,7 +129,7 @@ if option == "Ejecutar":
 
     if selected == "Analizar Grafo":
         st.session_state["window"] = False
-        is_bipartite, components = U.analyze_graph(
+        is_bipartite, components = G.analyze_graph(
             st.session_state["nodes"], st.session_state["edges"]
         )
         type = "Conexo" if len(components) == 1 else "Disconexo"
@@ -146,17 +151,17 @@ if option == "Ejecutar":
 
         subconjunto_seleccionado = U.select_subconjunto_UI()
         ##st.session_state["window"] = False
-        st.session_state["tables"] = U.tablas(subconjunto_seleccionado)
+        st.session_state["tables"] = P.tablas(subconjunto_seleccionado)
 
-        resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
-        tablacomparativa = U.generarTablaDistribuida(resultado)
+        resultado, listaNodos = P.generate_state_transitions(subconjunto_seleccionado)
+        tablacomparativa = P.generarTablaDistribuida(resultado)
 
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
             start_time = time.time()
             distribucionProbabilidades = U.strategies_UI(
-                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
+                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
             )
 
             # st.write(distribucionProbabilidades[1][1:])
@@ -164,12 +169,10 @@ if option == "Ejecutar":
             print(distribucionProbabilidades[1][1:])
 
             # Función principal
-            max_iteraciones = 10
-            mejor_particion, mejor_costo, r1, r2 = U.busqueda_local_emd(
+            mejor_particion, mejor_costo, r1, r2 = E1.busqueda_local_emd(
                 optionep,
                 optionef,
                 valorE,
-                max_iteraciones,
                 subconjunto_seleccionado,
                 listaNodos,
                 distribucionProbabilidades,
@@ -213,7 +216,7 @@ if option == "Ejecutar":
                 )
                 st.dataframe(df_r2)
 
-            U.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
+            E.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
 
             end_time = time.time()
 
@@ -225,11 +228,11 @@ if option == "Ejecutar":
     elif selected == "Estrategia 2":
 
         subconjunto_seleccionado = U.select_subconjunto_UI()
-        st.session_state["tables"] = U.tablas(subconjunto_seleccionado)
+        st.session_state["tables"] = P.tablas(subconjunto_seleccionado)
         ##st.session_state["window"] = False
 
-        resultado, listaNodos = U.generate_state_transitions(subconjunto_seleccionado)
-        tablacomparativa = U.generarTablaDistribuida(resultado)
+        resultado, listaNodos = P.generate_state_transitions(subconjunto_seleccionado)
+        tablacomparativa = P.generarTablaDistribuida(resultado)
 
         print("#############", listaNodos)
 
@@ -239,7 +242,7 @@ if option == "Ejecutar":
             inicio = time.time()
 
             distribucionProbabilidades = U.strategies_UI(
-                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, G
+                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
             )
 
             def ordenar_por_destino(aristas):
@@ -263,11 +266,11 @@ if option == "Ejecutar":
                 ]
 
             filtrarArista(optionep, optionef)
-            _, components = U.analyze_graph(
+            _, components = G.analyze_graph(
                 st.session_state["nodes"], st.session_state["edges"]
             )
             numcomponents = len(components)
-            numcomponents = U.estrategia2(
+            numcomponents = E2.estrategia2(
                 st.session_state["edges"],
                 subconjunto_seleccionado,
                 listaNodos,
@@ -282,7 +285,7 @@ if option == "Ejecutar":
             fin = time.time()
             for i in st.session_state["edges"]:
                 i.label = ""
-            
+
             st.write(f"Valor de perdida: {numcomponents}")
             st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
 

@@ -193,3 +193,46 @@ class MyEdge:
 
         #   Retornar los valores actualizados
         return edges, last_action, copy_edges
+
+    def marcarAristas(self, lista1, lista2, lista11, lista22, optionep, optionef):
+        # Añadir ' a lista2
+        lista2 = [i + "'" for i in lista2]
+
+        edges_to_remove = []
+        for edge in st.session_state["edges"]:
+            source_node = st.session_state["nodes"][edge.source]
+            to_node = st.session_state["nodes"][edge.to]
+
+            source_node_color = (
+                "#00FFFF"
+                if source_node.label in lista1
+                else "#FF0000" if source_node.label in lista11 else "#FFFFFF"
+            )
+            to_node_color = (
+                "#00FFFF"
+                if to_node.label in lista2
+                else "#FF0000" if to_node.label[0] in lista22 else "#FFFFFF"
+            )
+
+            source_node.color = source_node_color
+            to_node.color = to_node_color
+
+            edge_color = (
+                "#00FFFF"
+                if (source_node.label in lista1 and to_node.label[0] not in lista22)
+                else (
+                    "#FFFFFF"
+                    if (source_node.label in lista1 and to_node.label[0] in lista22)
+                    or (source_node.label in lista11 and to_node.label in lista2)
+                    else "#FF0000"
+                )
+            )
+            edge.color = edge_color
+            edge.dashes = edge_color == "#FFFFFF"
+
+            if source_node.label not in optionep or to_node.label[0] not in optionef:
+                edges_to_remove.append(edge)
+
+        st.session_state["edges"] = [
+            edge for edge in st.session_state["edges"] if edge not in edges_to_remove
+        ]

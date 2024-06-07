@@ -1,13 +1,23 @@
-from Utils import Utils
 import json
 import streamlit as st
 from streamlit_agraph import Edge, Node
 import networkx as nx
+from Utils import Utils
 
 U = Utils()
 
 
 class Graph:
+    def analyze_graph(self, nodes, edges):
+        # Filtro las aristas por la propiedad dashes para saber cuales no han sido eliminadas
+        # dashes == False => arista sin eliminar
+        # dashes == True => arista eliminada
+        edges = list(filter(lambda e: e.dashes == False, edges))
+        is_bipartite = st.session_state["G"].check_bipartite(nodes, edges)
+        components = st.session_state["G"].find_connected_components(nodes, edges)
+
+        return is_bipartite, components
+
     def load_from_json(self, filename):
         with open(filename, "r") as file:
             graph_data = json.load(file)
@@ -202,53 +212,6 @@ class Graph:
 
                 return nodes, edges, graph, last_action, name
 
-    def generarGrafoTablaDistribucion(self, listaNodos, nodes, edges):
-        # nodes, edges = [], []
-        # print(nodes)
-        num = 0
-        ultimosNodos1, ultimosNodos2 = [], []
-        for i in listaNodos:
-            new_node = Node(
-                id=num,
-                label=i,
-                size=15,
-                color=U.generateColor(),
-                font={"color": "#FFFFFF"},
-            )
-            new_node2 = Node(
-                id=num + 1,
-                label=i + "'",
-                size=15,
-                color=U.generateColor(),
-                font={"color": "#FFFFFF"},
-            )
-
-            nodes.append(new_node)
-            nodes.append(new_node2)
-
-            for last_node1 in ultimosNodos1:
-                new_edge1 = Edge(
-                    source=last_node1.id,
-                    target=new_node2.id,
-                    dashes=False,
-                    directed=True,
-                )
-                edges.append(new_edge1)
-
-            for last_node2 in ultimosNodos2:
-                new_edge2 = Edge(
-                    target=last_node2.id,
-                    source=new_node.id,
-                    dashes=False,
-                    directed=True,
-                )
-                edges.append(new_edge2)
-
-            ultimosNodos1.append(new_node)
-            ultimosNodos2.append(new_node2)  # Actualizar el último new_node2
-            num = num + 2
-
-        U.posicionate()
     def create_adjacency_list(self, nodes, edges):
         """
         Crea una lista de adyacencia a partir de los nodos y aristas dados.
@@ -410,7 +373,7 @@ class Graph:
         solucionActual,
         listaSolucionActual,
         nodedict,
-        numComponentes
+        numComponentes,
     ):
         copiaEdges = edges.copy()
         copiaEdges = list(filter(lambda x: x not in listaSolucion, copiaEdges))
@@ -455,7 +418,7 @@ class Graph:
                     solucionActual,
                     listaSolucionActual,
                     nodedict,
-                    numComponentes
+                    numComponentes,
                 )
                 listaSolucionActual, solucionActual = self.generarSubGrafoMinimo(
                     i + 1,
@@ -466,6 +429,82 @@ class Graph:
                     solucionActual,
                     listaSolucionActual,
                     copynodedict,
-                    numComponentes
+                    numComponentes,
                 )
         return listaSolucionActual, solucionActual
+
+    def posicionate(self):
+        is_bipartite, components = self.analyze_graph(
+            st.session_state["nodes"], st.session_state["edges"]
+        )
+        # st.sidebar.write(is_bipartite)
+
+        com = []
+        posnum = 0
+        numNodos = len(st.session_state["nodes"])
+
+        if numNodos > 18:
+            aupos = 300 + (numNodos - 18) * 20
+            auposx = 100 + (numNodos - 18) * 10
+        else:
+            aupos = 300
+            auposx = 100
+
+        for c in components:
+            if len(c) > len(com):
+                com = c
+
+            # Convertimos el gráfico a un objeto NetworkX
+            g = nx.Graph()
+
+            # Agregamos los nodos al grafo NetworkX
+            for node in st.session_state["nodes"]:
+                if node.id in c[0] or node.id in c[1]:
+                    g.add_node(node.id)
+
+            # Agregamos las conexiones al grafo NetworkX
+            for edge in st.session_state["edges"]:
+                # edges = list(filter(lambda e: e.dashes == False, st.session_state["edges"]))
+                if (edge.source in c[0] or edge.source in c[1]) and (
+                    edge.to in c[0] or edge.to in c[1]
+                ):
+                    g.add_edge(edge.source, edge.to)
+
+            if is_bipartite:
+                pos = nx.bipartite_layout(g, c[0])
+
+                colorconjunto1 = U.generateColor()
+                colorconjunto2 = U.generateColor()
+
+                for node in st.session_state["nodes"]:
+                    if node.id in c[0]:
+                        node.color = colorconjunto1
+                        node.x, node.y = (
+                            pos[node.id][0] * 200 + posnum,
+                            pos[node.id][1] * aupos,
+                        )
+
+                    elif node.id in c[1]:
+                        node.color = colorconjunto2
+                        node.x, node.y = (
+                            pos[node.id][0] * 200 + posnum,
+                            pos[node.id][1] * aupos,
+                        )
+
+            else:
+                g2 = nx.Graph()
+
+                for node in st.session_state["nodes"]:
+                    g2.add_node(node.id)
+
+                # Agregamos las conexiones al grafo NetworkX
+                for edge in st.session_state["edges"]:
+                    g2.add_edge(edge.source, edge.to)
+
+                pos = nx.circular_layout(g2)
+
+                for node in st.session_state["nodes"]:
+                    if node.id in c[0] or node.id in c[1]:
+                        node.x, node.y = pos[node.id][0] * 500, pos[node.id][1] * 500
+
+            posnum += 500

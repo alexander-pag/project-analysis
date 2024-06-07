@@ -1,13 +1,12 @@
 import streamlit as st
 import copy
-from Utils import Utils
+from Graph import Graph
 from streamlit_agraph import Node
 
-U = Utils()
+G = Graph()
 
 
 class MyNode:
-    # todo: No funciona el color del nodo
     def add_node_to_graph(
         self, selected, graph, nodes, edges, last_action, copy_nodes, copy_edges
     ):
@@ -38,7 +37,7 @@ class MyNode:
                 edges = [edge for edge in edges if edge not in edges_to_remove]
 
                 last_action = "Delete Node"
-                U.posicionate()
+                G.posicionate()
 
             # Retornar los valores actualizados
             return nodes, edges, last_action, copy_nodes, copy_edges
@@ -101,7 +100,7 @@ class MyNode:
 
                         nodes.append(new_node)
                         last_action = "New Node"
-                        U.posicionate()
+                        G.posicionate()
 
                     # Retornar los valores actualizados
                     return nodes, edges, last_action, copy_nodes, copy_edges
@@ -118,6 +117,6 @@ class MyNode:
                         nodes[index].shape = node_shape
 
                         last_action = "Edit Node"
-                        U.posicionate()
+                        G.posicionate()
                     # Retornar los valores actualizados
                     return nodes, edges, last_action, copy_nodes, copy_edges
