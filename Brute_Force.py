@@ -9,13 +9,29 @@ P = Probabilities()
 
 class BruteForce:
 
+    # Función para calcular el costo de una partición
     def calcular_costo(self, particion, subconjunto, original, listaNodos):
         ep1, ef1, vp1, ep2, ef2, vp2 = particion
+
+        if len(ep1) > 0:
+            ep1, vp1 = zip(*sorted(zip(ep1, vp1)))
+
+        if len(ep2) > 0:
+            ep2, vp2 = zip(*sorted(zip(ep2, vp2)))
+
+        ef1 = sorted(ef1)
+        ef2 = sorted(ef2)
+
         r1 = P.generarDistribucionProbabilidades(subconjunto, ep1, ef1, vp1, listaNodos)
         r2 = P.generarDistribucionProbabilidades(subconjunto, ep2, ef2, vp2, listaNodos)
-        tensor = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
-        emd = hamming(original[1][1:], tensor)
-        return emd, r1, r2
+
+        tensor1 = np.tensordot(r2[1][1:], r1[1][1:], axes=0).flatten()
+        tensor2 = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
+
+        emd1 = hamming(original[1][1:], tensor1)
+        emd2 = hamming(original[1][1:], tensor2)
+        print("Particion: ", particion, "EMD: ", min(emd1, emd2))
+        return min(emd1, emd2), r1, r2
 
     # Fuerza bruta para comparar eficiencias
     def fuerza_bruta(

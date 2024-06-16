@@ -58,7 +58,7 @@ class ThirdStrategy:
                 [valores_estados_presentes[j] for j in range(n_ep) if j != i],
             )
         else:
-            percentage = random.uniform(0.1, 0.4)
+            percentage = random.uniform(0.1, 0.2)
             num_ep1 = max(1, int(n_ep * percentage))
             num_ef1 = max(1, int(n_ef * percentage))
 
