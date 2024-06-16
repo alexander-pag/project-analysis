@@ -12,8 +12,11 @@ from File import File
 from Edge import MyEdge
 from First_Strategy import FirstStrategy
 from Second_Strategy import SecondStrategy
+from Third_Strategy import ThirdStrategy
+from Brute_Force import BruteForce
 from Probabilities import Probabilities
 import time
+import numpy as np
 
 st.set_page_config(
     page_title="Graph Editor",
@@ -29,6 +32,8 @@ F = File()
 E = MyEdge()
 E1 = FirstStrategy()
 E2 = SecondStrategy()
+E3 = ThirdStrategy()
+BF = BruteForce()
 P = Probabilities()
 
 css = U.load_css()
@@ -119,7 +124,8 @@ if option == "Ejecutar":
             "Analizar Grafo",
             "Estrategia 1",
             "Estrategia 2",
-            "Ejecutar Algoritmo",
+            "Estrategia 3",
+            "Fuerza Bruta",
         ],
         default_index=0,
         icons=["envelope-open", "play", "play", "play"],
@@ -234,7 +240,7 @@ if option == "Ejecutar":
         resultado, listaNodos = P.generate_state_transitions(subconjunto_seleccionado)
         tablacomparativa = P.generarTablaDistribuida(resultado)
 
-        print("#############", listaNodos)
+        # print("#############", listaNodos)
 
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
@@ -288,6 +294,217 @@ if option == "Ejecutar":
 
             st.write(f"Valor de perdida: {numcomponents}")
             st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
+
+    elif selected == "Estrategia 3":
+
+        subconjunto_seleccionado = U.select_subconjunto_UI()
+        st.session_state["tables"] = P.tablas(subconjunto_seleccionado)
+        ##st.session_state["window"] = False
+
+        resultado, listaNodos = P.generate_state_transitions(subconjunto_seleccionado)
+        tablacomparativa = P.generarTablaDistribuida(resultado)
+
+        boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
+
+        # Ejemplo de uso
+        if boton:
+            start_time = time.time()
+
+            # Generar la distribución de probabilidades
+            distribucionProbabilidades = U.strategies_UI(
+                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
+            )
+
+            # Parameters for REMCMC
+            num_replicas = 5
+            beta_values = np.linspace(0.1, 1.0, num_replicas)
+            num_iterations = (len(optionep) + len(optionef)) * 10
+            swap_interval = 5
+            r1 = []
+            r2 = []
+
+            # Initialize replicas
+            replicas = [
+                {
+                    "partition": E3.generate_random_partition(
+                        optionep, optionef, valorE
+                    ),
+                    "beta": beta,
+                }
+                for beta in beta_values
+            ]
+
+            # Evaluate initial states
+            for replica in replicas:
+                replica["loss"], r1, r2 = E3.calcular_costo(
+                    replica["partition"],
+                    subconjunto_seleccionado,
+                    distribucionProbabilidades,
+                    listaNodos,
+                )
+                replica["r1"] = r1
+                replica["r2"] = r2
+
+            # Initialize best result
+            best_replica = min(replicas, key=lambda x: x["loss"])
+            global_best_partition = best_replica["partition"]
+            global_best_loss = best_replica["loss"]
+            global_best_r1 = best_replica["r1"]
+            global_best_r2 = best_replica["r2"]
+
+            # Run REMCMC with simulated annealing
+            for iteration in range(num_iterations):
+                for replica in replicas:
+                    E3.metropolis_update(
+                        replica,
+                        optionep,
+                        optionef,
+                        valorE,
+                        subconjunto_seleccionado,
+                        distribucionProbabilidades,
+                        listaNodos,
+                    )
+                    # Update global best result
+                    if replica["loss"] < global_best_loss:
+                        global_best_partition = replica["partition"]
+                        global_best_loss = replica["loss"]
+                        global_best_r1 = replica["r1"]
+                        global_best_r2 = replica["r2"]
+
+                    # Check if global best loss is 0 and break if true
+                    if global_best_loss == 0:
+                        break
+                # Break the outer loop if global_best_loss is 0
+                if global_best_loss == 0:
+                    break
+                if iteration % swap_interval == 0:
+                    E3.replica_exchange(replicas)
+
+            # Output results
+            print("Best Partition:", global_best_partition)
+            print("Loss:", global_best_loss)
+            print("Best r1:", global_best_r1)
+            print("Best r2:", global_best_r2)
+
+            # Convert r1 and r2 to DataFrame
+            df_r1 = U.crear_dataframe(global_best_r1)
+            df_r2 = U.crear_dataframe(global_best_r2)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                partes = global_best_r1[0][0].split("\\")
+                lista10 = ast.literal_eval(partes[0].strip())
+                lista20 = ast.literal_eval(partes[1].strip())
+
+                cadena10 = "".join(lista10)
+                cadena20 = "".join(lista20)
+
+                st.write(
+                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {global_best_r1[1][0]})**"
+                )
+                st.dataframe(df_r1)
+
+            with col2:
+                partes = global_best_r2[0][0].split("\\")
+                lista11 = ast.literal_eval(partes[0].strip())
+                lista21 = ast.literal_eval(partes[1].strip())
+
+                cadena11 = "".join(lista11)
+                cadena21 = "".join(lista21)
+                st.write(
+                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {global_best_r2[1][0]})**"
+                )
+                st.dataframe(df_r2)
+
+            E.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
+
+            end_time = time.time()
+
+            total_time = end_time - start_time
+
+            st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
+            st.write("El emd es: ", global_best_loss)
+
+    elif selected == "Fuerza Bruta":
+
+        subconjunto_seleccionado = U.select_subconjunto_UI()
+        ##st.session_state["window"] = False
+        st.session_state["tables"] = P.tablas(subconjunto_seleccionado)
+
+        resultado, listaNodos = P.generate_state_transitions(subconjunto_seleccionado)
+        tablacomparativa = P.generarTablaDistribuida(resultado)
+
+        boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
+
+        if boton:
+            start_time = time.time()
+            distribucionProbabilidades = U.strategies_UI(
+                optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
+            )
+
+            # st.write(distribucionProbabilidades[1][1:])
+
+            print(distribucionProbabilidades[1][1:])
+
+            # Función principal
+            mejor_particion, mejor_costo, r1, r2 = BF.fuerza_bruta(
+                optionep,
+                optionef,
+                valorE,
+                subconjunto_seleccionado,
+                listaNodos,
+                distribucionProbabilidades,
+            )
+
+            print("Mejor partición encontrada:")
+            print(mejor_particion)
+            print(f"Mejor costo (EMD): {mejor_costo}")
+
+            print("////////////////////////////////////////")
+            print(r1)
+            print(r2)
+
+            # Convertir r1 y r2 a DataFrame
+            df_r1 = U.crear_dataframe(r1)
+            df_r2 = U.crear_dataframe(r2)
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                partes = r1[0][0].split("\\")
+                lista10 = ast.literal_eval(partes[0].strip())
+                lista20 = ast.literal_eval(partes[1].strip())
+
+                cadena10 = "".join(lista10)
+                cadena20 = "".join(lista20)
+
+                st.write(
+                    f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {r1[1][0]})**"
+                )
+                st.dataframe(df_r1)
+
+            with col2:
+                partes = r2[0][0].split("\\")
+                lista11 = ast.literal_eval(partes[0].strip())
+                lista21 = ast.literal_eval(partes[1].strip())
+
+                cadena11 = "".join(lista11)
+                cadena21 = "".join(lista21)
+                st.write(
+                    f"## **P({cadena21}$^t$ $^+$ $^1$ | {cadena11}$^t$ = {r2[1][0]})**"
+                )
+                st.dataframe(df_r2)
+
+            E.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
+
+            end_time = time.time()
+
+            total_time = end_time - start_time
+
+            st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
+            st.write("El emd es: ", mejor_costo)
+
 
 if option == "Archivo":
     st.session_state["window"] = False
@@ -352,7 +569,7 @@ if option == "Archivo":
                     st.session_state["edges"],
                     st.session_state["graph"],
                 )
-                U.posicionate()
+                G.posicionate()
 
         elif selected1 == "Close":
             st.session_state["graph"] = False
@@ -438,7 +655,7 @@ if option == "Archivo":
                 st.session_state["edges"] = edges
                 st.session_state["last_action"] = last_action
                 st.session_state["copy_edges"] = copy_edges
-            U.posicionate()
+            G.posicionate()
 
         if graph_option == "Aleatorio":
 
@@ -449,7 +666,7 @@ if option == "Archivo":
             st.session_state["graph"] = graph
             st.session_state["last_action"] = last_action
             st.session_state["name_graph"] = name
-            U.posicionate()
+            G.posicionate()
 
 
 elif option == "Editar":
@@ -481,55 +698,58 @@ elif option == "Editar":
             styles={},
         )
         if selected == "Agregar Nodo":
-            nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
-                selected,
-                st.session_state["graph"],
-                st.session_state["nodes"],
-                st.session_state["edges"],
-                st.session_state["last_action"],
-                st.session_state["copy_nodes"],
-                st.session_state["copy_edges"],
-            )
+            if st.session_state["graph"]:
+                nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
+                    selected,
+                    st.session_state["graph"],
+                    st.session_state["nodes"],
+                    st.session_state["edges"],
+                    st.session_state["last_action"],
+                    st.session_state["copy_nodes"],
+                    st.session_state["copy_edges"],
+                )
 
-            st.session_state["nodes"] = nodes
-            st.session_state["edges"] = edges
-            st.session_state["last_action"] = last_action
-            st.session_state["copy_nodes"] = copy_nodes
-            st.session_state["copy_edges"] = copy_edges
+                st.session_state["nodes"] = nodes
+                st.session_state["edges"] = edges
+                st.session_state["last_action"] = last_action
+                st.session_state["copy_nodes"] = copy_nodes
+                st.session_state["copy_edges"] = copy_edges
 
         elif selected == "Editar Nodo":
-            nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
-                selected,
-                st.session_state["graph"],
-                st.session_state["nodes"],
-                st.session_state["edges"],
-                st.session_state["last_action"],
-                st.session_state["copy_nodes"],
-                st.session_state["copy_edges"],
-            )
+            if st.session_state["graph"]:
+                nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
+                    selected,
+                    st.session_state["graph"],
+                    st.session_state["nodes"],
+                    st.session_state["edges"],
+                    st.session_state["last_action"],
+                    st.session_state["copy_nodes"],
+                    st.session_state["copy_edges"],
+                )
 
-            st.session_state["nodes"] = nodes
-            st.session_state["edges"] = edges
-            st.session_state["last_action"] = last_action
-            st.session_state["copy_nodes"] = copy_nodes
-            st.session_state["copy_edges"] = copy_edges
+                st.session_state["nodes"] = nodes
+                st.session_state["edges"] = edges
+                st.session_state["last_action"] = last_action
+                st.session_state["copy_nodes"] = copy_nodes
+                st.session_state["copy_edges"] = copy_edges
 
         elif selected == "Eliminar Nodo":
-            nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
-                selected,
-                st.session_state["graph"],
-                st.session_state["nodes"],
-                st.session_state["edges"],
-                st.session_state["last_action"],
-                st.session_state["copy_nodes"],
-                st.session_state["copy_edges"],
-            )
+            if st.session_state["graph"]:
+                nodes, edges, last_action, copy_nodes, copy_edges = N.add_node_to_graph(
+                    selected,
+                    st.session_state["graph"],
+                    st.session_state["nodes"],
+                    st.session_state["edges"],
+                    st.session_state["last_action"],
+                    st.session_state["copy_nodes"],
+                    st.session_state["copy_edges"],
+                )
 
-            st.session_state["nodes"] = nodes
-            st.session_state["edges"] = edges
-            st.session_state["last_action"] = last_action
-            st.session_state["copy_nodes"] = copy_nodes
-            st.session_state["copy_edges"] = copy_edges
+                st.session_state["nodes"] = nodes
+                st.session_state["edges"] = edges
+                st.session_state["last_action"] = last_action
+                st.session_state["copy_nodes"] = copy_nodes
+                st.session_state["copy_edges"] = copy_edges
 
     elif selected == "Arista":
         selected = option_menu(
@@ -607,7 +827,7 @@ elif option == "Editar":
                 st.session_state["edges"] = copy.deepcopy(
                     st.session_state["copy_edges"]
                 )
-        U.posicionate()
+        G.posicionate()
 
 elif option == "Ventana":
     st.session_state["window"] = True

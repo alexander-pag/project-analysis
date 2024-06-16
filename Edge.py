@@ -2,8 +2,10 @@ import streamlit as st
 import copy
 from Utils import Utils
 from streamlit_agraph import Edge
+from Graph import Graph
 
 U = Utils()
+G = Graph()
 
 
 class MyEdge:
@@ -56,7 +58,7 @@ class MyEdge:
                             for edge in edges:
                                 st.write(edge.source, edge.to)
 
-                            U.posicionate()
+                            G.posicionate()
 
                         else:
                             b = True

@@ -1,5 +1,5 @@
 import copy
-from scipy.stats import wasserstein_distance
+from scipy.spatial.distance import hamming
 import streamlit as st
 from Probabilities import Probabilities
 from Graph import Graph
@@ -84,9 +84,7 @@ class SecondStrategy:
                     particion = True
                     break
             else:
-                emd = wasserstein_distance(
-                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
-                )
+                emd = hamming(distribucionOriginal[1][1:], nueva_distribucion[1][1:])
                 arista.label = str(emd)
                 # st.write(arista.label)
 

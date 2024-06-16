@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.distance import hamming
 from scipy.stats import wasserstein_distance
 from Probabilities import Probabilities
 
@@ -22,16 +23,26 @@ class FirstStrategy:
     # Función para calcular el costo de una partición
     def calcular_costo(self, particion, subconjunto, original, listaNodos):
         ep1, ef1, vp1, ep2, ef2, vp2 = particion
+
+        if len(ep1) > 0:
+            ep1, vp1 = zip(*sorted(zip(ep1, vp1)))
+
+        ef1 = sorted(ef1)
+        ep2, vp2 = zip(*sorted(zip(ep2, vp2)))
+        ef2 = sorted(ef2)
+
         r1 = P.generarDistribucionProbabilidades(subconjunto, ep1, ef1, vp1, listaNodos)
         r2 = P.generarDistribucionProbabilidades(subconjunto, ep2, ef2, vp2, listaNodos)
 
         # print("Particion: ", particion, "R1: ", r1, "R2: ", r2)
 
-        tensor = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
+        tensor1 = np.tensordot(r2[1][1:], r1[1][1:], axes=0).flatten()
+        tensor2 = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
 
-        emd = wasserstein_distance(original[1][1:], tensor)
-        print("Particion: ", particion, "EMD: ", emd)
-        return emd, r1, r2
+        emd1 = hamming(original[1][1:], tensor1)
+        emd2 = hamming(original[1][1:], tensor2)
+        print("Particion: ", particion, "EMD: ", min(emd1, emd2))
+        return min(emd1, emd2), r1, r2
 
     # Función para generar una nueva partición a partir de una partición dada
     def generar_vecino(self, particion, fase):
@@ -47,6 +58,7 @@ class FirstStrategy:
                 ep2
             ):  # Fase 2: intercambiar elementos entre ep1 y ep2
                 if len(ep1) == 0:
+                    ef2.append(ef1.pop(0))
                     ep1.append(ep2.pop(0))
                     vp1.append(vp2.pop(0))
                 else:
@@ -91,14 +103,13 @@ class FirstStrategy:
         mejor_costo, r1, r2 = self.calcular_costo(
             mejor_particion, subconjunto, original_system, listaNodos
         )
-        max_iteraciones = (len(estados_presentes) * len(estados_futuros)) + max(
-            len(estados_futuros), len(estados_presentes)
+        max_iteraciones = (len(estados_presentes) * len(estados_futuros)) + (
+            len(estados_presentes) + len(estados_futuros)
         )
 
         print(max(len(estados_futuros), len(estados_presentes)), max_iteraciones)
 
         iteraciones_sin_mejora = 0
-        num = len(estados_presentes) + len(estados_futuros)
         particiones_visitadas = set()
         particiones_visitadas.add(tuple(map(tuple, mejor_particion)))
 
