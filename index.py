@@ -63,7 +63,7 @@ for key, value in default_session_state.items():
         st.session_state[key] = value
 
 # Crear listas de opciones para las barras de navegación
-options_file = ["Archivo", "Editar", "Ejecutar", "Herramientas", "Ayuda", "Ventana"]
+options_file = ["Archivo", "Editar", "Ejecutar", "Ayuda", "Ventana"]
 # Crear las barras de navegación como cajas de selección en la barra lateral
 with st.sidebar:
     option = option_menu(
@@ -83,7 +83,6 @@ if option == "Ayuda":
         - **Archivo**: En esta sección se encuentran las opciones para abrir, guardar y exportar el grafo.
         - **Editar**: En esta sección se encuentran las opciones para agregar, editar y eliminar nodos y aristas.
         - **Ejecutar**: En esta sección se encuentran las opciones para ejecutar algoritmos sobre el grafo.
-        - **Herramientas**: En esta sección se encuentran las opciones para realizar operaciones sobre el grafo.
         - **Ayuda**: En esta sección se encuentran las opciones para obtener ayuda.
         - **Ventana**: En esta sección se encuentran las opciones para mostrar la ventana de resultados.
         """
@@ -123,15 +122,6 @@ if option == "Ayuda":
             file_name="documentacion.pdf",
             mime="application/octet-stream",
         )
-
-if option == "Herramientas":
-    st.session_state["window"] = True
-    st.write(
-        """
-        # Herramientas
-        - Opción no disponible por el momento.
-        """
-    )
 
 if option == "Ejecutar":
 

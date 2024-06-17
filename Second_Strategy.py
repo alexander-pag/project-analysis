@@ -126,7 +126,7 @@ class SecondStrategy:
 
     def menoresAristas(self, nodes, edges, numComponentes):
         list, sol = st.session_state["G"].generarSubGrafoMinimo(
-            0, nodes, edges, 0, [], -1, [], {}, numComponentes
+            0, nodes, edges, 0, [], -1, [], {}, numComponentes, {}
         )
         ##self.posicionate()
         return list, sol

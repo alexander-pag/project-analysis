@@ -363,74 +363,56 @@ class Graph:
         # Convierte el objeto del grafo a una cadena JSON
         return json.dumps(graph_data)
 
-    def generarSubGrafoMinimo(
-        self,
-        i,
-        nodes,
-        edges,
-        solucion,
-        listaSolucion,
-        solucionActual,
-        listaSolucionActual,
-        nodedict,
-        numComponentes,
-    ):
-        copiaEdges = edges.copy()
-        copiaEdges = list(filter(lambda x: x not in listaSolucion, copiaEdges))
-
+    def generarSubGrafoMinimo(self, i, nodes, edges, solucion, listaSolucion, solucionActual, listaSolucionActual, nodedict, numComponentes, memo):
+        # Verificar si ya hemos resuelto este subproblema
+        estado_actual = (i, tuple(listaSolucion), solucion)
+        
+        if estado_actual in memo:
+            return memo[estado_actual]
+        
+        # Filtrar las aristas que no están en la lista de soluciones
+        copiaEdges = [edge for edge in edges if edge not in listaSolucion]
         componentes = self.find_connected_components(nodes, copiaEdges)
-        esBipartito = self.check_bipartite(nodes, copiaEdges)
-
+        
+        # Si es bipartito y hemos encontrado más componentes
+        if len(componentes) == numComponentes + 1:
+            if solucion <= solucionActual or solucionActual == -1:
+                memo[estado_actual] = (listaSolucion, solucion)
+                return listaSolucion, solucion
+        
+        # Si hemos procesado todos los bordes
         if i >= len(edges):
             return listaSolucionActual, solucionActual
-
-        if esBipartito and (len(componentes) == numComponentes + 1):
-            if (solucion <= solucionActual) or (solucionActual == -1):
-                return listaSolucion, solucion
-
-        elif esBipartito and (len(componentes) == numComponentes):
+        
+        # Si es bipartito y tenemos el mismo número de componentes
+        if len(componentes) == numComponentes:
             copynodedict = nodedict.copy()
             copiaSolucion = solucion
-
+            
             if edges[i].to not in nodedict:
-                copiaSolucion = solucion + float(edges[i].label)
+                copiaSolucion += float(edges[i].label)
                 copynodedict[edges[i].to] = float(edges[i].label)
-
-            elif edges[i].to in nodedict:
-                copiaSolucion = solucion - copynodedict[edges[i].to]
-                copynodedict[edges[i].to] = copynodedict[edges[i].to] + float(
-                    edges[i].label
-                )
-                copiaSolucion = copiaSolucion + (
-                    (copynodedict[edges[i].to] + float(edges[i].label)) / 2
-                )
-
-            copiaListaSolucion = listaSolucion.copy()
-            copiaListaSolucion.append(edges[i])
-
+            else:
+                copiaSolucion -= copynodedict[edges[i].to]
+                copynodedict[edges[i].to] += float(edges[i].label)
+                copiaSolucion += copynodedict[edges[i].to]
+            
+            copiaListaSolucion = listaSolucion + [edges[i]]
+            
             if copiaSolucion <= solucionActual or solucionActual == -1:
+                # Explorar la rama sin incluir la arista actual
                 listaSolucionActual, solucionActual = self.generarSubGrafoMinimo(
-                    i + 1,
-                    nodes,
-                    edges,
-                    solucion,
-                    listaSolucion,
-                    solucionActual,
-                    listaSolucionActual,
-                    nodedict,
-                    numComponentes,
+                    i + 1, nodes, edges, solucion, listaSolucion, solucionActual,
+                    listaSolucionActual, nodedict, numComponentes, memo
                 )
+                # Explorar la rama incluyendo la arista actual
                 listaSolucionActual, solucionActual = self.generarSubGrafoMinimo(
-                    i + 1,
-                    nodes,
-                    edges,
-                    copiaSolucion,
-                    copiaListaSolucion,
-                    solucionActual,
-                    listaSolucionActual,
-                    copynodedict,
-                    numComponentes,
+                    i + 1, nodes, edges, copiaSolucion, copiaListaSolucion, solucionActual,
+                    listaSolucionActual, copynodedict, numComponentes, memo
                 )
+        
+        # Memorizar el resultado antes de devolver
+        memo[estado_actual] = (listaSolucionActual, solucionActual)
         return listaSolucionActual, solucionActual
 
     def posicionate(self):
