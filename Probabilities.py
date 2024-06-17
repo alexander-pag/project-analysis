@@ -141,6 +141,14 @@ class Probabilities:
 
             nodes.append(new_node)
             nodes.append(new_node2)
+            
+            new_edge1 = Edge(
+                    source=new_node.id,
+                    target=new_node2.id,
+                    dashes=False,
+                    directed=True,
+                )
+            edges.append(new_edge1)
 
             for last_node1 in ultimosNodos1:
                 new_edge1 = Edge(
