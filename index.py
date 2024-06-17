@@ -334,12 +334,14 @@ if option == "Ejecutar":
             )
 
             # Parameters for REMCMC
-            num_replicas = 5
+            num_replicas = 4
             beta_values = np.linspace(0.1, 1.0, num_replicas)
-            num_iterations = (len(optionep) * len(optionef)) * 10
-            swap_interval = 5
+            num_iterations = (len(optionep) + len(optionef)) * 10
+            swap_interval = 10
             r1 = []
             r2 = []
+            max_no_improvement_iterations = 50  # Número de iteraciones sin mejora antes de detenerse
+            no_improvement_counter = 0
 
             # Initialize replicas
             replicas = [
@@ -372,6 +374,7 @@ if option == "Ejecutar":
 
             # Run REMCMC with simulated annealing
             for iteration in range(num_iterations):
+                improvement = False
                 for replica in replicas:
                     E3.metropolis_update(
                         replica,
@@ -388,12 +391,19 @@ if option == "Ejecutar":
                         global_best_loss = replica["loss"]
                         global_best_r1 = replica["r1"]
                         global_best_r2 = replica["r2"]
+                        improvement = True
+                        no_improvement_counter = 0
 
                     # Check if global best loss is 0 and break if true
                     if global_best_loss == 0:
                         break
                 # Break the outer loop if global_best_loss is 0
                 if global_best_loss == 0:
+                    break
+                if not improvement:
+                    no_improvement_counter += 1
+                if no_improvement_counter >= max_no_improvement_iterations:
+                    print("Terminado debido a demasiadas iteraciones sin mejora.")
                     break
                 if iteration % swap_interval == 0:
                     E3.replica_exchange(replicas)

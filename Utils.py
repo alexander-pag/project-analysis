@@ -1,7 +1,7 @@
 import random
 import streamlit as st
 import pandas as pd
-from states import Tres, Cuatro, Cinco, Seis, Ocho
+from states import Tres, Cuatro, Cinco, Seis, Ocho, Nueve
 from itertools import product
 import datetime
 
@@ -52,10 +52,13 @@ class Utils:
             return Seis
         elif selected_subconjunto == "Ocho":
             return Ocho
+        elif selected_subconjunto == "Nueve":
+            return Nueve
 
     def select_subconjunto_UI(self):
         option = st.radio(
-            "Selecciona un subconjunto:", ["Tres", "Cuatro", "Cinco", "Seis", "Ocho"]
+            "Selecciona un subconjunto:",
+            ["Tres", "Cuatro", "Cinco", "Seis", "Ocho", "Nueve"],
         )
         return self.obtener_subconjunto(option)
 

@@ -39,35 +39,26 @@ class ThirdStrategy:
 
         if partition_type == "empty_ef" and n_ef > 0:
             i = random.randint(0, n_ef - 1)
-            partition = (
-                [],
-                [estados_futuros[i]],
-                [],
-                estados_presentes,
-                [ef for ef in estados_futuros if ef != estados_futuros[i]],
-                valores_estados_presentes,
-            )
+            ef1 = [estados_futuros[i]]
+            ef2 = estados_futuros[:i] + estados_futuros[i + 1 :]
+            partition = ([], ef1, [], estados_presentes, ef2, valores_estados_presentes)
         elif partition_type == "empty_ep" and n_ep > 0:
             i = random.randint(0, n_ep - 1)
-            partition = (
-                [estados_presentes[i]],
-                [],
-                [valores_estados_presentes[i]],
-                [ep for ep in estados_presentes if ep != estados_presentes[i]],
-                estados_futuros,
-                [valores_estados_presentes[j] for j in range(n_ep) if j != i],
-            )
+            ep1 = [estados_presentes[i]]
+            vp1 = [valores_estados_presentes[i]]
+            ep2 = estados_presentes[:i] + estados_presentes[i + 1 :]
+            vp2 = valores_estados_presentes[:i] + valores_estados_presentes[i + 1 :]
+            partition = (ep1, [], vp1, ep2, estados_futuros, vp2)
         else:
-            percentage = random.uniform(0.1, 0.2)
+            percentage = random.uniform(0.1, 0.4)
             num_ep1 = max(1, int(n_ep * percentage))
             num_ef1 = max(1, int(n_ef * percentage))
 
-            ep_indices = random.sample(range(n_ep), num_ep1)
-            ef_indices = random.sample(range(n_ef), num_ef1)
+            ep_indices = set(random.sample(range(n_ep), num_ep1))
+            ef_indices = set(random.sample(range(n_ef), num_ef1))
 
             ep1 = [estados_presentes[i] for i in ep_indices]
             ef1 = [estados_futuros[i] for i in ef_indices]
-
             vp1 = [valores_estados_presentes[i] for i in ep_indices]
             ep2 = [estados_presentes[i] for i in range(n_ep) if i not in ep_indices]
             ef2 = [estados_futuros[i] for i in range(n_ef) if i not in ef_indices]

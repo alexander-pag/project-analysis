@@ -25,7 +25,6 @@ class FirstStrategy:
 
         if len(ep1) > 0:
             ep1, vp1 = zip(*sorted(zip(ep1, vp1)))
-
         if len(ep2) > 0:
             ep2, vp2 = zip(*sorted(zip(ep2, vp2)))
 
@@ -34,8 +33,6 @@ class FirstStrategy:
 
         r1 = P.generarDistribucionProbabilidades(subconjunto, ep1, ef1, vp1, listaNodos)
         r2 = P.generarDistribucionProbabilidades(subconjunto, ep2, ef2, vp2, listaNodos)
-
-        # print("Particion: ", particion, "R1: ", r1, "R2: ", r2)
 
         tensor1 = np.tensordot(r2[1][1:], r1[1][1:], axes=0).flatten()
         tensor2 = np.tensordot(r1[1][1:], r2[1][1:], axes=0).flatten()
@@ -95,8 +92,6 @@ class FirstStrategy:
             if not (ep1 and ef1 and ep1[0] == ef1[0]):
                 nuevo_vecino = True
 
-        print(ep1, ef1, vp1, ep2, ef2, vp2)
-
         return (ep1, ef1, vp1, ep2, ef2, vp2)
 
     # Algoritmo de Búsqueda Local con EMD y Programación Dinámica
@@ -112,7 +107,7 @@ class FirstStrategy:
         mejor_particion = self.generar_particion_aleatoria(
             estados_presentes, estados_futuros, valores_estados_presentes
         )
-        mejor_costo, r1, r2 = self.calcular_costo(
+        mejor_costo, mejor_r1, mejor_r2 = self.calcular_costo(
             mejor_particion, subconjunto, original_system, listaNodos
         )
         max_iteraciones = (len(estados_presentes) * len(estados_futuros)) + (
@@ -125,7 +120,7 @@ class FirstStrategy:
 
         # ya que puede ser que la primera particion de 0, entonces se termina
         if mejor_costo == 0.0:
-            return mejor_particion, mejor_costo, r1, r2
+            return mejor_particion, mejor_costo, mejor_r1, mejor_r2
 
         while iteraciones_sin_mejora < max_iteraciones:
             vecino = self.generar_vecino(mejor_particion, iteraciones_sin_mejora)
@@ -147,8 +142,10 @@ class FirstStrategy:
             if costo_vecino < mejor_costo:
                 mejor_particion = vecino
                 mejor_costo = costo_vecino
+                mejor_r1 = r1
+                mejor_r2 = r2
                 iteraciones_sin_mejora = 0
             else:
                 iteraciones_sin_mejora += 1
 
-        return mejor_particion, mejor_costo, r1, r2
+        return mejor_particion, mejor_costo, mejor_r1, mejor_r2
