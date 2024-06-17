@@ -91,18 +91,36 @@ if option == "Ayuda":
 
     st.write(
         """
-        # Manual de usuario
-        - Si deseas obtener más información sobre el uso de la aplicación, puedes descargar el manual de usuario.
+        # Manual de usuario, técnico y documentación
+        - Si deseas obtener más información sobre el uso de la aplicación, puedes descargar el manual de usuario, manual técnico o la documentación.
         """
     )
 
-    with open("manual.pdf", "rb") as pdf_file:
+    with open("manual_usuario.pdf", "rb") as pdf_file:
         PDFbyte = pdf_file.read()
 
         st.download_button(
             label="Descargar Manual de Usuario",
             data=PDFbyte,
-            file_name="manual.pdf",
+            file_name="manual_usuario.pdf",
+            mime="application/octet-stream",
+        )
+    with open("manual_tecnico.pdf", "rb") as pdf_file:
+        PDFbyte = pdf_file.read()
+
+        st.download_button(
+            label="Descargar Manual Técnico",
+            data=PDFbyte,
+            file_name="manual_tecnico.pdf",
+            mime="application/octet-stream",
+        )
+    with open("documentacion.pdf", "rb") as pdf_file:
+        PDFbyte = pdf_file.read()
+
+        st.download_button(
+            label="Descargar Documentación",
+            data=PDFbyte,
+            file_name="documentacion.pdf",
             mime="application/octet-stream",
         )
 
@@ -318,7 +336,7 @@ if option == "Ejecutar":
             # Parameters for REMCMC
             num_replicas = 5
             beta_values = np.linspace(0.1, 1.0, num_replicas)
-            num_iterations = (len(optionep) + len(optionef)) * 10
+            num_iterations = (len(optionep) * len(optionef)) * 10
             swap_interval = 5
             r1 = []
             r2 = []

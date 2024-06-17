@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.spatial.distance import hamming
-from scipy.stats import wasserstein_distance
 from Probabilities import Probabilities
 
 P = Probabilities()
@@ -27,8 +26,10 @@ class FirstStrategy:
         if len(ep1) > 0:
             ep1, vp1 = zip(*sorted(zip(ep1, vp1)))
 
+        if len(ep2) > 0:
+            ep2, vp2 = zip(*sorted(zip(ep2, vp2)))
+
         ef1 = sorted(ef1)
-        ep2, vp2 = zip(*sorted(zip(ep2, vp2)))
         ef2 = sorted(ef2)
 
         r1 = P.generarDistribucionProbabilidades(subconjunto, ep1, ef1, vp1, listaNodos)
@@ -66,24 +67,35 @@ class FirstStrategy:
                     ep2.append(ep1.pop(0))
                     vp1.append(vp2.pop(0))
                     vp2.append(vp1.pop(0))
-            else:  # Fase 3: ep1 intercambia elemento con ep2 mientras ef1 permanece igual
+            else:  # Fase 3: ep1 intercambia elemento con ep2 mientras ef1 intercambia con ef2
                 fase_3_index = fase - len(ef2) - len(ep2)
-                if fase_3_index < len(ep2):  # intercambiar ep1 y ep2
+                inner_fase = fase_3_index % (len(ef2) + 1)
+
+                if inner_fase < len(ef2):  # Intercambiar ef1 y ef2
+                    if len(ef1) == 0:
+                        ep2.append(ep1.pop(0))
+                        vp2.append(vp1.pop(0))
+                        ep1.append(ep2.pop(0))
+                        vp1.append(vp2.pop(0))
+                        ef1.append(ef2.pop(0))
+                    else:
+                        ef2.append(ef1.pop(0))
+                        ef1.append(ef2.pop(0))
+                else:  # Intercambiar ep1 y ep2
                     if len(ep1) == 0:
                         ep1.append(ep2.pop(0))
                         vp1.append(vp2.pop(0))
                     else:
-                        ep1.append(ep2.pop(0))
                         ep2.append(ep1.pop(0))
-                        vp1.append(vp2.pop(0))
+                        ep1.append(ep2.pop(0))
                         vp2.append(vp1.pop(0))
-                else:  # después de intercambiar ep1 y ep2, cambiar ef1 y ef2
-                    ef1.append(ef2.pop(0))
-                    ef2.append(ef1.pop(0))
+                        vp1.append(vp2.pop(0))
 
             # Verificar la condición de evitar ep1 y ef1 conteniendo el mismo elemento
             if not (ep1 and ef1 and ep1[0] == ef1[0]):
                 nuevo_vecino = True
+
+        print(ep1, ef1, vp1, ep2, ef2, vp2)
 
         return (ep1, ef1, vp1, ep2, ef2, vp2)
 
@@ -106,8 +118,6 @@ class FirstStrategy:
         max_iteraciones = (len(estados_presentes) * len(estados_futuros)) + (
             len(estados_presentes) + len(estados_futuros)
         )
-
-        print(max(len(estados_futuros), len(estados_presentes)), max_iteraciones)
 
         iteraciones_sin_mejora = 0
         particiones_visitadas = set()

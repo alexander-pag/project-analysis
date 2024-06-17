@@ -176,7 +176,7 @@ class MyEdge:
                 if actual_edge_2:
                     edges.remove(actual_edge_2)
                 last_action = "Delete Edge"
-                self.posicionate()
+                G.posicionate()
             """
             if st.sidebar.button("Eliminar"):
                 st.session_state["copy_edges"] = copy.deepcopy(
