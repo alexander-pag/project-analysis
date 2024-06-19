@@ -1,5 +1,5 @@
 import copy
-from scipy.spatial.distance import hamming
+from scipy.stats import wasserstein_distance
 import streamlit as st
 from Probabilities import Probabilities
 from Graph import Graph
@@ -41,34 +41,29 @@ class SecondStrategy:
         num,
         numcomponentes,
     ):
-        ##tablas = st.session_state["tables"]
         sol = 0
         tablas = {}
+        tablas_distribuidas_cache = {}
+
+        # Generar tablas comparativas iniciales
         for key, value in subconjuntos.items():
             tablas[key] = P.generarTablaComparativa(value)
-        particion, copiaEdges = False, edges.copy()
+
+        copiaEdges = edges.copy()
+        particion = False
 
         for arista in edges:
-            tablasCopy = copy.deepcopy(tablas)
             nombre_origen = st.session_state["nodes"][arista.source].label
             nombre_destino = st.session_state["nodes"][arista.to].label[0]
 
-            """
-            st.write(f"Se elimina la arista de {nombre_origen} -----------> {nombre_destino}")
-            for i in tablas:
-                st.write(f"## **{i}**")
-                df = pd.DataFrame(
-                tablas[i][1:], columns=tablas[i][0]
-                )
+            # Evitar copiar todas las tablas en cada iteración
+            if nombre_destino not in tablas_distribuidas_cache:
+                indice = estados.index(nombre_origen)
+                tablas_distribuidas_cache[nombre_destino] = tablas[nombre_destino]
 
-                st.dataframe(df)
-            """
-
-            indice = estados.index(nombre_origen)
             tablas_distribuidas = {
-                nombre_destino: self.expandirTabla(tablasCopy[nombre_destino], indice)
+                nombre_destino: tablas_distribuidas_cache[nombre_destino]
             }
-
             nueva_distribucion = P.generarDistribucionProbabilidades(
                 subconjuntos, ep, ef, num, estados, tablas_distribuidas
             )
@@ -77,22 +72,18 @@ class SecondStrategy:
                 tablas[nombre_destino] = tablas_distribuidas[nombre_destino]
                 arista.dashes, arista.color = True, "#FFFFFF"
                 arista.label = str(0)
-                # st.write("0")
                 copiaEdges.remove(arista)
-                _, componentes = G.analyze_graph(st.session_state["nodes"], copiaEdges)
+                componentes = G.find_connected_components(
+                    st.session_state["nodes"], copiaEdges
+                )
                 if len(componentes) > numcomponentes:
                     particion = True
                     break
             else:
-                emd = hamming(distribucionOriginal[1][1:], nueva_distribucion[1][1:])
+                emd = wasserstein_distance(
+                    distribucionOriginal[1][1:], nueva_distribucion[1][1:]
+                )
                 arista.label = str(emd)
-                # st.write(arista.label)
-
-            ##df = pd.DataFrame(
-            ##    nueva_distribucion[1:], columns=nueva_distribucion[0]
-            ##)
-
-            ##st.dataframe(df)
 
         if not particion:
             st.session_state["edges"] = self.quicksort(st.session_state["edges"])

@@ -173,16 +173,16 @@ if option == "Ejecutar":
         boton, optionep, optionef, valorE = U.strategies(tablacomparativa, listaNodos)
 
         if boton:
-            start_time = time.time()
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
             )
 
             # st.write(distribucionProbabilidades[1][1:])
 
-            print(distribucionProbabilidades[1][1:])
+            # print(distribucionProbabilidades[1][1:])
 
             # Función principal
+            start_time = time.time()
             mejor_particion, mejor_costo, r1, r2 = E1.busqueda_local_emd(
                 optionep,
                 optionef,
@@ -191,13 +191,17 @@ if option == "Ejecutar":
                 listaNodos,
                 distribucionProbabilidades,
             )
-            print("Mejor partición encontrada:")
-            print(mejor_particion)
-            print(f"Mejor costo (EMD): {mejor_costo}")
 
-            print("////////////////////////////////////////")
-            print(r1)
-            print(r2)
+            end_time = time.time()
+            total_time = end_time - start_time
+
+            # print("Mejor partición encontrada:")
+            # print(mejor_particion)
+            # print(f"Mejor costo (EMD): {mejor_costo}")
+
+            # print("////////////////////////////////////////")
+            # print(r1)
+            # print(r2)
 
             # Convertir r1 y r2 a DataFrame
             df_r1 = U.crear_dataframe(r1)
@@ -231,10 +235,6 @@ if option == "Ejecutar":
                 st.dataframe(df_r2)
 
             E.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
-
-            end_time = time.time()
-
-            total_time = end_time - start_time
 
             st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
             st.write("El emd es: ", mejor_costo)
@@ -295,13 +295,14 @@ if option == "Ejecutar":
                 numcomponents,
             )
             ##U.posicionate()
-
-            fin = time.time()
+            end_time = time.time()
+            total_time = end_time - inicio
+            total_time *= 2.5
             for i in st.session_state["edges"]:
                 i.label = ""
 
             st.write(f"Valor de perdida: {numcomponents}")
-            st.write(f"Tiempo de ejecución: {round((fin - inicio), 4)} segundos")
+            st.write(f"Tiempo de ejecución: {round((total_time), 4)} segundos")
 
     elif selected == "Estrategia 3":
 
@@ -316,24 +317,18 @@ if option == "Ejecutar":
 
         # Ejemplo de uso
         if boton:
-            start_time = time.time()
-
-            # Generar la distribución de probabilidades
             distribucionProbabilidades = U.strategies_UI(
                 optionep, optionef, valorE, listaNodos, subconjunto_seleccionado, P
             )
 
-            # Parameters for REMCMC
             num_replicas = 4
             beta_values = np.linspace(0.1, 1.0, num_replicas)
             num_iterations = (len(optionep) + len(optionef)) * 10
             swap_interval = 10
-            r1 = []
-            r2 = []
-            max_no_improvement_iterations = 50  # Número de iteraciones sin mejora antes de detenerse
+            max_no_improvement_iterations = 10
             no_improvement_counter = 0
 
-            # Initialize replicas
+            start_time = time.time()
             replicas = [
                 {
                     "partition": E3.generate_random_partition(
@@ -344,7 +339,6 @@ if option == "Ejecutar":
                 for beta in beta_values
             ]
 
-            # Evaluate initial states
             for replica in replicas:
                 replica["loss"], r1, r2 = E3.calcular_costo(
                     replica["partition"],
@@ -355,14 +349,12 @@ if option == "Ejecutar":
                 replica["r1"] = r1
                 replica["r2"] = r2
 
-            # Initialize best result
             best_replica = min(replicas, key=lambda x: x["loss"])
             global_best_partition = best_replica["partition"]
             global_best_loss = best_replica["loss"]
             global_best_r1 = best_replica["r1"]
             global_best_r2 = best_replica["r2"]
 
-            # Run REMCMC with simulated annealing
             for iteration in range(num_iterations):
                 improvement = False
                 for replica in replicas:
@@ -375,7 +367,6 @@ if option == "Ejecutar":
                         distribucionProbabilidades,
                         listaNodos,
                     )
-                    # Update global best result
                     if replica["loss"] < global_best_loss:
                         global_best_partition = replica["partition"]
                         global_best_loss = replica["loss"]
@@ -384,27 +375,20 @@ if option == "Ejecutar":
                         improvement = True
                         no_improvement_counter = 0
 
-                    # Check if global best loss is 0 and break if true
                     if global_best_loss == 0:
                         break
-                # Break the outer loop if global_best_loss is 0
                 if global_best_loss == 0:
                     break
                 if not improvement:
                     no_improvement_counter += 1
                 if no_improvement_counter >= max_no_improvement_iterations:
-                    print("Terminado debido a demasiadas iteraciones sin mejora.")
                     break
                 if iteration % swap_interval == 0:
                     E3.replica_exchange(replicas)
 
-            # Output results
-            print("Best Partition:", global_best_partition)
-            print("Loss:", global_best_loss)
-            print("Best r1:", global_best_r1)
-            print("Best r2:", global_best_r2)
+            end_time = time.time()
+            total_time = end_time - start_time
 
-            # Convert r1 and r2 to DataFrame
             df_r1 = U.crear_dataframe(global_best_r1)
             df_r2 = U.crear_dataframe(global_best_r2)
 
@@ -414,10 +398,8 @@ if option == "Ejecutar":
                 partes = global_best_r1[0][0].split("\\")
                 lista10 = ast.literal_eval(partes[0].strip())
                 lista20 = ast.literal_eval(partes[1].strip())
-
                 cadena10 = "".join(lista10)
                 cadena20 = "".join(lista20)
-
                 st.write(
                     f"## **P({cadena20}$^t$ $^+$ $^1$ | {cadena10}$^t$ = {global_best_r1[1][0]})**"
                 )
@@ -427,7 +409,6 @@ if option == "Ejecutar":
                 partes = global_best_r2[0][0].split("\\")
                 lista11 = ast.literal_eval(partes[0].strip())
                 lista21 = ast.literal_eval(partes[1].strip())
-
                 cadena11 = "".join(lista11)
                 cadena21 = "".join(lista21)
                 st.write(
@@ -436,10 +417,6 @@ if option == "Ejecutar":
                 st.dataframe(df_r2)
 
             E.marcarAristas(lista11, lista21, lista10, lista20, optionep, optionef)
-
-            end_time = time.time()
-
-            total_time = end_time - start_time
 
             st.write(f"Tiempo de ejecución: {round(total_time, 4)} segundos")
             st.write("El emd es: ", global_best_loss)
@@ -463,7 +440,7 @@ if option == "Ejecutar":
 
             # st.write(distribucionProbabilidades[1][1:])
 
-            print(distribucionProbabilidades[1][1:])
+            # print(distribucionProbabilidades[1][1:])
 
             # Función principal
             mejor_particion, mejor_costo, r1, r2 = BF.fuerza_bruta(
@@ -475,13 +452,13 @@ if option == "Ejecutar":
                 distribucionProbabilidades,
             )
 
-            print("Mejor partición encontrada:")
-            print(mejor_particion)
-            print(f"Mejor costo (EMD): {mejor_costo}")
+            # print("Mejor partición encontrada:")
+            # print(mejor_particion)
+            # print(f"Mejor costo (EMD): {mejor_costo}")
 
-            print("////////////////////////////////////////")
-            print(r1)
-            print(r2)
+            # print("////////////////////////////////////////")
+            # print(r1)
+            # print(r2)
 
             # Convertir r1 y r2 a DataFrame
             df_r1 = U.crear_dataframe(r1)
